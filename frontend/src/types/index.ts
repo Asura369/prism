@@ -119,3 +119,66 @@ export interface ReviewDetail {
     download: string;
   };
 }
+
+export interface TrendScore {
+  heuristic: number;
+  safety: number;
+  visual_potential: number;
+  angle_ability: number;
+  saturation: number;
+  combined: number;
+  reasoning: string;
+}
+
+export interface TrendCandidate {
+  id: string;
+  title: string;
+  source: string;
+  url: string;
+  snippet: string;
+  metrics: Record<string, unknown>;
+  fetched_at: string;
+  cluster_id: string | null;
+}
+
+export interface ScoredCandidate {
+  candidate: TrendCandidate;
+  score: TrendScore;
+}
+
+export interface DiscoverResponse {
+  fetched_at: string;
+  sources_used: string[];
+  sources_failed: string[];
+  candidates: ScoredCandidate[];
+}
+
+export interface DispatchAngle {
+  hook: string;
+  framing: string;
+  target_emotion: string;
+  format_suggestion: string;
+  est_slide_count: number;
+  why_it_works: string;
+  recommended_plugin: string;
+  plugin_reasoning: string;
+}
+
+export interface ManualIdeaResponse {
+  candidate_id: string;
+  score: TrendScore;
+  candidate: ScoredCandidate;
+}
+
+export interface UploadTrendsResponse {
+  imported_count: number;
+  candidates: ScoredCandidate[];
+}
+
+export interface DraftJobPayload {
+  plugin: string;
+  topic: string;
+  angle: Record<string, unknown>;
+  recommended_plugin: string;
+  overrides: Record<string, unknown>;
+}

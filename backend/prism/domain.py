@@ -44,7 +44,7 @@ class TrendCandidate:
     source: str
     url: str
     snippet: str
-    metrics: dict[str, float]
+    metrics: dict[str, Any]
     fetched_at: datetime
     cluster_id: str | None = None
 

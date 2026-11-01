@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Dashboard from "@/pages/Dashboard";
 import Discover from "@/pages/Discover";
+import Angles from "@/pages/Angles";
 import NewJob from "@/pages/NewJob";
 import JobDetail from "@/pages/JobDetail";
 import Review from "@/pages/Review";
@@ -90,6 +91,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="discover" element={<Discover />} />
+        <Route path="discover/angles" element={<Angles />} />
         <Route path="new" element={<NewJob />} />
         <Route path="jobs/:jobId" element={<JobDetail />} />
         <Route path="review/:jobId" element={<Review />} />

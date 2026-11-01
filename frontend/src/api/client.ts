@@ -1,13 +1,19 @@
 import type {
+  DispatchAngle,
+  DiscoverResponse,
+  DraftJobPayload,
   Health,
   JobDetail,
   JobEvent,
   JobSummary,
+  ManualIdeaResponse,
   PluginInfo,
   ReviewDetail,
   ReviewItem,
   ReviewMetadata,
+  ScoredCandidate,
   SettingsResponse,
+  UploadTrendsResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -21,8 +27,9 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const isForm = init?.body instanceof FormData;
   const response = await fetch(`/api${path}`, {
-    headers: init?.body ? { "content-type": "application/json" } : undefined,
+    headers: init?.body && !isForm ? { "content-type": "application/json" } : undefined,
     ...init,
   });
   if (!response.ok) {
@@ -77,5 +84,34 @@ export const api = {
     request<{ ok: boolean }>(`/review/${id}/reject`, {
       method: "POST",
       body: JSON.stringify({ reason }),
+    }),
+  trends: (params: { region: string; windowH: number; sources: string[] }) =>
+    request<DiscoverResponse>(
+      `/discover/trends?region=${encodeURIComponent(params.region)}&window_h=${params.windowH}&sources=${encodeURIComponent(
+        params.sources.join(","),
+      )}`,
+    ),
+  manualIdea: (body: { title: string; snippet?: string; url?: string }) =>
+    request<ManualIdeaResponse>("/discover/manual", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  uploadTrends: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<UploadTrendsResponse>("/discover/trends/upload", {
+      method: "POST",
+      body: form,
+    });
+  },
+  angles: (candidateId: string) =>
+    request<{ angles: DispatchAngle[]; candidate?: ScoredCandidate }>("/discover/angles", {
+      method: "POST",
+      body: JSON.stringify({ candidate_id: candidateId }),
+    }),
+  selectAngle: (candidateId: string, angleIndex: number, plugin: string) =>
+    request<{ draft_job_payload: DraftJobPayload }>("/discover/select", {
+      method: "POST",
+      body: JSON.stringify({ candidate_id: candidateId, angle_index: angleIndex, plugin }),
     }),
 };

@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import db
 from .adapters.resolver import AdapterResolver
-from .api import health, jobs, plugins, review
+from .api import discover, health, jobs, plugins, review
 from .config import Config, Secrets, get_secrets, load_config, resolve_path
 from .errors import AdapterUnavailable, ConfigError, JobNotFound, PrismError
 from .plugins.registry import PluginRegistry
@@ -51,6 +51,7 @@ def create_app(cfg: Config | None = None, secrets: Secrets | None = None) -> Fas
     app.include_router(jobs.router, prefix="/api")
     app.include_router(plugins.router, prefix="/api")
     app.include_router(review.router, prefix="/api")
+    app.include_router(discover.router, prefix="/api")
     app.mount("/media/review", StaticFiles(directory=str(review_path)), name="review-media")
 
     @app.exception_handler(HTTPException)
