@@ -231,3 +231,7 @@ review/
 work/
 frontend/dist/
 frontend/.npm-cache/
+
+# frontend shared utilities (the Python template ignores lib/)
+!frontend/src/lib/
+!frontend/src/lib/**
