@@ -129,7 +129,6 @@ def select(body: SelectBody, request: Request, conn: sqlite3.Connection = Depend
         angle["recommended_plugin"] = default_plugin_for(
             item.candidate,
             [i for i in registry.list_plugins() if i.available],
-            request.app.state.cfg,
         )
     return {
         "draft_job_payload": {

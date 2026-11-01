@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.fixture
 def cfg(tmp_path: Path) -> Config:
-    cfg = load_config()
+    cfg = load_config(env_file=False)
     cfg.base_dir = REPO_ROOT
     cfg.run.work_dir = str(tmp_path / "work")
     cfg.run.output_dir = str(tmp_path / "review")

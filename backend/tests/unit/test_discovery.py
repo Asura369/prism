@@ -223,6 +223,6 @@ def test_default_plugin_routing_prefers_news_then_qa_then_facts(cfg: Config):
         manifest={},
         available=True,
     )
-    assert default_plugin_for(candidate, [news, facts], cfg) == "news_carousel"
-    assert default_plugin_for(candidate, [faq, facts], cfg, format_suggestion="qa") == "faq_carousel"
-    assert default_plugin_for(candidate, [facts], cfg) == "facts_carousel"
+    assert default_plugin_for(candidate, [news, facts]) == "news_carousel"
+    assert default_plugin_for(candidate, [faq, facts], format_suggestion="qa") == "faq_carousel"
+    assert default_plugin_for(candidate, [facts]) == "facts_carousel"

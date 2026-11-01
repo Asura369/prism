@@ -50,7 +50,6 @@ ANGLE_SCHEMA = {
 def default_plugin_for(
     candidate: TrendCandidate,
     plugins: list[PluginInfo],
-    cfg: Config,
     *,
     format_suggestion: str = "",
 ) -> str:
@@ -131,10 +130,10 @@ def _validate_angles(
         recommended = str(raw.get("recommended_plugin", ""))
         reasoning = str(raw.get("plugin_reasoning", ""))
         if not cfg.discovery.angles.route_plugin_via_llm:
-            recommended = default_plugin_for(candidate, plugins, cfg, format_suggestion=format_suggestion)
+            recommended = default_plugin_for(candidate, plugins, format_suggestion=format_suggestion)
             reasoning = "auto-routed (LLM routing disabled)"
         elif recommended not in available:
-            recommended = default_plugin_for(candidate, plugins, cfg, format_suggestion=format_suggestion)
+            recommended = default_plugin_for(candidate, plugins, format_suggestion=format_suggestion)
             reasoning = "auto-routed (LLM recommendation invalid)"
         angles.append(
             Angle(

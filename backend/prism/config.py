@@ -6,6 +6,7 @@ from typing import Any
 from pathlib import Path
 
 import yaml
+from dotenv import dotenv_values
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -164,12 +165,12 @@ class Secrets(BaseSettings):
     prism_db_path: str = Field("", validation_alias="PRISM_DB_PATH")
 
 
-def _config_path(explicit: Path | None = None) -> Path | None:
+def _config_path(explicit: Path | None = None, env_config: str | None = None) -> Path | None:
     candidates: list[Path] = []
     if explicit:
         candidates.append(explicit)
-    if os.environ.get("PRISM_CONFIG"):
-        candidates.append(Path(os.environ["PRISM_CONFIG"]))
+    if env_config:
+        candidates.append(Path(env_config))
     candidates.extend([Path("./config.yaml"), Path("../config.yaml")])
     for candidate in candidates:
         if candidate.exists():
@@ -177,8 +178,19 @@ def _config_path(explicit: Path | None = None) -> Path | None:
     return None
 
 
-def load_config(path: Path | None = None) -> Config:
-    cfg_path = _config_path(path)
+def _dotenv_values(enabled: bool) -> dict[str, str]:
+    if not enabled:
+        return {}
+    values: dict[str, str] = {}
+    for candidate in (Path(".env"), Path("../.env")):
+        if candidate.exists():
+            values.update({key: value for key, value in dotenv_values(candidate).items() if value is not None})
+    return values
+
+
+def load_config(path: Path | None = None, *, env_file: bool = True) -> Config:
+    env = {**_dotenv_values(env_file), **os.environ}
+    cfg_path = _config_path(path, env.get("PRISM_CONFIG"))
     data: dict = {}
     if cfg_path:
         try:
@@ -187,8 +199,8 @@ def load_config(path: Path | None = None) -> Config:
             raise ConfigError(f"Invalid YAML in {cfg_path}: {exc}") from exc
     cfg = Config.model_validate(data)
     cfg.base_dir = cfg_path.resolve().parent if cfg_path else Path.cwd()
-    if os.environ.get("PRISM_DB_PATH"):
-        cfg.run.db_path = os.environ["PRISM_DB_PATH"]
+    if env.get("PRISM_DB_PATH"):
+        cfg.run.db_path = env["PRISM_DB_PATH"]
     return cfg
 
 

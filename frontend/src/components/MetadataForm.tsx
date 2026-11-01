@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,14 @@ interface Props {
   metadata: ReviewMetadata;
   slideCount: number;
   onSave: (patch: Partial<ReviewMetadata>) => Promise<ReviewMetadata>;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 function normalizeTag(raw: string): string {
   return raw.trim().replace(/^#+/, "").replace(/\s+/g, "");
 }
 
-export function MetadataForm({ metadata, slideCount, onSave }: Props) {
+export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Props) {
   const [title, setTitle] = useState(metadata.title ?? "");
   const [caption, setCaption] = useState(metadata.caption ?? "");
   const [hashtags, setHashtags] = useState<string[]>(metadata.hashtags ?? []);
@@ -33,6 +34,10 @@ export function MetadataForm({ metadata, slideCount, onSave }: Props) {
 
   const current = JSON.stringify([title, caption, hashtags, platforms, altText]);
   const dirty = current !== baseline;
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const counterClass = caption.length > 2200 ? "text-red-600" : "text-ink-400";
 

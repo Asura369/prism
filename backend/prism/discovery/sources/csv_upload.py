@@ -68,11 +68,3 @@ def parse_trends_csv(content: bytes, filename: str) -> list[TrendCandidate]:
             )
         )
     return candidates
-
-
-class GoogleTrendsCSV:
-    name = "google_trends_csv"
-
-    @staticmethod
-    def parse(content: bytes, filename: str) -> list[TrendCandidate]:
-        return parse_trends_csv(content, filename)

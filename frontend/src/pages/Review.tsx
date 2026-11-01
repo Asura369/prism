@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { safeExternalUrl } from "@/lib/utils";
 import type { ReviewMetadata } from "@/types";
 
 interface SourceLink {
@@ -28,6 +29,7 @@ export default function Review() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [metadataDirty, setMetadataDirty] = useState(false);
 
   const reviewQuery = useQuery({
     queryKey: ["review", jobId],
@@ -113,10 +115,20 @@ export default function Review() {
             <Button variant="outline" onClick={() => regenerate.mutate()} disabled={regenerate.isPending}>
               <RotateCcw className="h-4 w-4" /> Regenerate
             </Button>
-            <Button variant="outline" onClick={() => setRejectOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setRejectOpen(true)}
+              disabled={metadataDirty}
+              title={metadataDirty ? "Save metadata changes before rejecting" : undefined}
+            >
               <X className="h-4 w-4" /> Reject
             </Button>
-            <Button variant="ember" onClick={() => approve.mutate()} disabled={approve.isPending}>
+            <Button
+              variant="ember"
+              onClick={() => approve.mutate()}
+              disabled={approve.isPending || metadataDirty}
+              title={metadataDirty ? "Save metadata changes before approving" : undefined}
+            >
               <Check className="h-4 w-4" /> {approve.isPending ? "Approving…" : "Approve"}
             </Button>
           </div>
@@ -125,6 +137,11 @@ export default function Review() {
 
       {actionError && (
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</p>
+      )}
+      {metadataDirty && (
+        <p className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Save metadata changes before approving or rejecting.
+        </p>
       )}
 
       <div className="grid gap-7 lg:grid-cols-[1.25fr_1fr]">
@@ -158,21 +175,26 @@ export default function Review() {
               </CardHeader>
               <CardContent className="flex flex-col gap-2 text-sm">
                 {sources.length === 0 && <p className="text-ink-400">No sources recorded.</p>}
-                {sources.map((source, sourceIndex) => (
-                  <div key={`${source.url}-${sourceIndex}`} className="flex flex-col gap-0.5">
-                    <span className="font-medium text-ink-900">{source.name ?? "Source"}</span>
-                    {source.url ? (
-                      <a
-                        href={source.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="truncate text-xs text-ember-600 underline underline-offset-2"
-                      >
-                        {source.url}
-                      </a>
-                    ) : null}
-                  </div>
-                ))}
+                {sources.map((source, sourceIndex) => {
+                  const href = safeExternalUrl(source.url);
+                  return (
+                    <div key={`${source.url}-${sourceIndex}`} className="flex flex-col gap-0.5">
+                      <span className="font-medium text-ink-900">{source.name ?? "Source"}</span>
+                      {href ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate text-xs text-ember-600 underline underline-offset-2"
+                        >
+                          {source.url}
+                        </a>
+                      ) : source.url ? (
+                        <span className="truncate text-xs text-ink-400">{source.url}</span>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           )}
@@ -189,6 +211,7 @@ export default function Review() {
                 metadata={metadata}
                 slideCount={slideCount}
                 onSave={saveMetadata}
+                onDirtyChange={setMetadataDirty}
               />
             </CardContent>
           </Card>

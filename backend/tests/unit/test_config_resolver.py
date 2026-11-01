@@ -18,14 +18,15 @@ def test_defaults_are_sane():
 
 def test_env_db_path_overrides_config(monkeypatch, tmp_path: Path):
     monkeypatch.setenv("PRISM_DB_PATH", str(tmp_path / "env.db"))
-    cfg = load_config()
+    cfg = load_config(env_file=False)
     assert cfg.run.db_path == str(tmp_path / "env.db")
 
 
-def test_explicit_config_path_sets_base_dir(tmp_path: Path):
+def test_explicit_config_path_sets_base_dir(monkeypatch, tmp_path: Path):
+    monkeypatch.delenv("PRISM_DB_PATH", raising=False)
     path = tmp_path / "config.yaml"
     path.write_text("run:\n  db_path: ./custom.db\n")
-    cfg = load_config(path)
+    cfg = load_config(path, env_file=False)
     assert cfg.run.db_path == "./custom.db"
     assert cfg.base_dir == tmp_path
 
@@ -63,3 +64,14 @@ def test_resolver_uses_llm_key(cfg: Config):
     resolver = AdapterResolver(cfg, secrets)
     assert [a.name for a in resolver.resolve("llm")] == ["openai_compat", "fake"]
     assert resolver.get("llm").model == cfg.adapters.llm.openai_compat.model
+
+
+def test_dotenv_can_supply_config_path_and_db_path(monkeypatch, tmp_path: Path):
+    monkeypatch.delenv("PRISM_DB_PATH", raising=False)
+    monkeypatch.delenv("PRISM_CONFIG", raising=False)
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "config.yaml").write_text("run:\n  db_path: ./from-config.db\n")
+    (tmp_path / ".env").write_text("PRISM_CONFIG=./config.yaml\nPRISM_DB_PATH=./from-env.db\n")
+    cfg = load_config()
+    assert cfg.run.db_path == "./from-env.db"
+    assert cfg.base_dir == tmp_path

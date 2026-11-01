@@ -39,6 +39,16 @@ describe("MetadataForm", () => {
     expect(screen.getByText("1 / 30")).toBeInTheDocument();
   });
 
+  it("reports dirty state so review actions can wait for saves", async () => {
+    const user = userEvent.setup();
+    const onDirtyChange = vi.fn();
+    render(
+      <MetadataForm metadata={metadata} slideCount={2} onSave={vi.fn()} onDirtyChange={onDirtyChange} />,
+    );
+    await user.type(screen.getByLabelText("Caption"), "x");
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+  });
+
   it("disables save when alt text is empty", async () => {
     const user = userEvent.setup();
     render(<MetadataForm metadata={{ ...metadata, alt_text: ["", "ok"] }} slideCount={2} onSave={vi.fn()} />);
