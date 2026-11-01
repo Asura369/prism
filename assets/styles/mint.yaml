@@ -1,0 +1,8 @@
+name: mint
+bg_color: "#EEF7F0"
+bg_gradient: null
+heading_color: "#1A3A2A"
+body_color: "#3A5A4A"
+accent_color: "#22A85E"
+footer_color: "#8A8580"
+font_family: Inter

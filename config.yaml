@@ -1,0 +1,83 @@
+run:
+  output_dir: ./review
+  work_dir: ./work
+  db_path: ./data/prism.db
+  keep_intermediates: false
+  max_retries: 3
+  retry_backoff_s: [1, 4, 16]
+  worker_heartbeat_stale_s: 15
+
+adapters:
+  llm:
+    # Any OpenAI-compatible provider: set base_url + model for yours.
+    # Examples: DeepSeek https://api.deepseek.com / deepseek-flash
+    #           OpenAI   https://api.openai.com/v1 / gpt-4o-mini
+    #           local    http://localhost:11434/v1 / llama3.1
+    # API key comes from LLM_KEY.
+    default: openai_compat
+    openai_compat:
+      base_url: https://api.deepseek.com
+      model: deepseek-flash
+      timeout_s: 60
+      extra_body: { thinking: { type: disabled } }  # provider-specific passthrough; DeepSeek runs non-thinking
+    fallback: [fake]
+  cards:
+    default: templated
+    templated: { style: cream }
+    fallback: []
+  export:
+    default: zip
+
+assets:
+  fonts_dir: ./assets/fonts
+  styles_dir: ./assets/styles
+
+discovery:
+  sources:
+    google_news_rss:   { enabled: true }
+    hackernews:        { enabled: true }
+    reddit:            { enabled: false, subs: [] }  # deferred: public JSON returns 403; RSS fallback or OAuth later
+    google_trends_csv: { enabled: true }
+    manual:            { enabled: true }
+  clustering:
+    method: difflib          # ⚠️ TUNE — replace with embeddings if precision matters
+    threshold: 0.80          # ⚠️ TUNE
+  cache_ttl_min: 15
+  fetch_timeout_s: 10
+  max_candidates_per_source: 40
+  top_n_to_ui: 12
+  scoring:
+    # ⚠️ DEFAULTS ONLY — educated guesses. Tune after ~20 real runs.
+    weights:
+      safety: 0.30
+      angle_ability: 0.25
+      visual_potential: 0.20
+      heuristic: 0.15
+      saturation: -0.10
+    hard_filter:
+      safety_min: 0.40      # ⚠️ TUNE — start strict, loosen if too many drops
+    source_reliability:
+      google_news_rss: 1.0
+      hackernews: 0.9
+      reddit: 0.8
+      google_trends_csv: 1.0
+      manual: 0.7
+  angles:
+    count: 3
+    route_plugin_via_llm: true
+
+validation:
+  min_slide_count: 5
+  max_slide_count: 12
+  min_file_size_mb: 0.05
+  min_body_font_px: 36
+  caption_max_chars: 2200
+  hashtags_max: 30
+
+policy:
+  ai_disclosure: required
+  news_carousel:
+    require_attribution: true
+    min_sources: 2
+    attribution: { caption: true, sources_slide: true }
+    block_topics: [politics, tragedy, medical_claims, active_conflict]

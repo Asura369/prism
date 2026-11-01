@@ -1,0 +1,8 @@
+name: cream
+bg_color: "#FAF6EE"
+bg_gradient: null
+heading_color: "#1E1B18"
+body_color: "#4A4540"
+accent_color: "#D97757"
+footer_color: "#8A8580"
+font_family: Inter

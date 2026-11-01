@@ -218,3 +218,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# local npm cache (avoids a broken global cache)
+frontend/.npm-cache/
+
+# Prism runtime and frontend
+.env
+node_modules/
+frontend/node_modules/
+data/
+review/
+work/
+frontend/dist/
+frontend/.npm-cache/
