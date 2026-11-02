@@ -134,16 +134,8 @@ class ValidationConfig(_Model):
     hashtags_max: int = 30
 
 
-class NewsPolicyConfig(_Model):
-    require_attribution: bool = True
-    min_sources: int = 2
-    attribution: dict[str, bool] = Field(default_factory=lambda: {"caption": True, "sources_slide": True})
-    block_topics: list[str] = Field(default_factory=lambda: ["politics", "tragedy", "medical_claims", "active_conflict"])
-
-
 class PolicyConfig(_Model):
     ai_disclosure: str = "required"
-    news_carousel: NewsPolicyConfig = Field(default_factory=NewsPolicyConfig)
 
 
 class Config(_Model):
