@@ -9,6 +9,8 @@ from .cards.templated import TemplatedCardRenderer
 from .assembly.zip import ZipExportAdapter
 from .llm.fake import FakeLLM
 from .llm.openai import OpenAIAdapter
+from .news.fake import FakeNews
+from .news.google_news import GoogleNewsRSSNews
 
 INTERFACES = ("llm", "cards", "export", "news")
 
@@ -31,14 +33,19 @@ class AdapterResolver:
             "export": {
                 "zip": ZipExportAdapter(),
             },
-            "news": {},
+            "news": {
+                "google_news_rss": GoogleNewsRSSNews(),
+                "fake": FakeNews(),
+            },
         }
         if self.secrets.fake_adapters:
             self._registry["llm"] = {"fake": self._registry["llm"]["fake"]}
-            self._registry["news"] = {}
+            self._registry["news"] = {"fake": self._registry["news"]["fake"]}
 
     def chain_names(self, interface: str) -> list[str]:
         if interface == "llm" and self.secrets.fake_adapters:
+            return ["fake"]
+        if interface == "news" and self.secrets.fake_adapters:
             return ["fake"]
         if interface == "llm":
             return [self.cfg.adapters.llm.default, *self.cfg.adapters.llm.fallback]
@@ -47,7 +54,7 @@ class AdapterResolver:
         if interface == "export":
             return [self.cfg.adapters.export.default]
         if interface == "news":
-            return ["google_news_rss", "manual"]
+            return ["google_news_rss"]
         raise AdapterUnavailable(interface, f"Unknown adapter interface: {interface}")
 
     def registered(self, interface: str) -> dict[str, BaseAdapter]:
