@@ -9,6 +9,7 @@ import yaml
 from prism.config import Config, Secrets, load_config
 from prism.domain import SlideSpec
 from prism.plugins.facts_carousel.plugin import FactsCarouselPlugin
+from prism.plugins.faq_carousel.plugin import FaqCarouselPlugin
 from prism.plugins.news_carousel.plugin import NewsCarouselPlugin
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -54,10 +55,25 @@ def news_plugin(cfg: Config) -> NewsCarouselPlugin:
 
 
 @pytest.fixture
+def faq_plugin(cfg: Config) -> FaqCarouselPlugin:
+    plugin = FaqCarouselPlugin(cfg)
+    manifest = yaml.safe_load((REPO_ROOT / "backend/prism/plugins/faq_carousel/manifest.yaml").read_text())
+    plugin.attach_manifest(manifest)
+    return plugin
+
+
+@pytest.fixture
 def facts_payload() -> dict:
     from prism.adapters.llm.fake import FACTS_SETS
 
     return json.loads(json.dumps(FACTS_SETS[0]))
+
+
+@pytest.fixture
+def faq_payload() -> dict:
+    from prism.adapters.llm.fake import FAQ_SETS
+
+    return json.loads(json.dumps(FAQ_SETS[0]))
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ import pytest
 from prism import db
 from prism.config import Config, Secrets
 from prism.discovery import service
-from prism.discovery.angles import default_plugin_for
+from prism.discovery.angles import _validate_angles, default_plugin_for
 from prism.discovery.cluster import cluster
 from prism.discovery.score import combine, score_candidates, heuristic_score
 from prism.discovery.sources.csv_upload import parse_trends_csv
@@ -226,3 +226,57 @@ def test_default_plugin_routing_prefers_news_then_qa_then_facts(cfg: Config):
     assert default_plugin_for(candidate, [news, facts]) == "news_carousel"
     assert default_plugin_for(candidate, [faq, facts], format_suggestion="qa") == "faq_carousel"
     assert default_plugin_for(candidate, [facts]) == "facts_carousel"
+
+
+def test_validate_angles_auto_routes_unavailable_recommendation(cfg: Config):
+    candidate = _candidate("gn:1", "Gut feelings explained", "google_news_rss", 1.0)
+    facts = PluginInfo(
+        name="facts_carousel",
+        version="0.1.0",
+        description="Facts",
+        output_kind="image_sequence",
+        defaults={},
+        manifest={},
+        available=True,
+    )
+    payload = {
+        "angles": [
+            {
+                "hook": "What does gut feeling actually mean?",
+                "framing": "Five questions answered in plain language",
+                "target_emotion": "curiosity",
+                "format_suggestion": "qa",
+                "est_slide_count": 7,
+                "why_it_works": "The question format matches how people search.",
+                "recommended_plugin": "faq_carousel",
+                "plugin_reasoning": "A Q&A deck keeps each explanation short.",
+            },
+            {
+                "hook": "Your body has a second brain",
+                "framing": "Three fast facts that reframe how the gut works",
+                "target_emotion": "surprise",
+                "format_suggestion": "facts",
+                "est_slide_count": 7,
+                "why_it_works": "It promises a concrete reframe people can repeat.",
+                "recommended_plugin": "facts_carousel",
+                "plugin_reasoning": "The topic is evergreen and best told as a short fact list.",
+            },
+            {
+                "hook": "This week: the gut-brain story, without the hype",
+                "framing": "A sourced recap of the newest research",
+                "target_emotion": "concern",
+                "format_suggestion": "recap",
+                "est_slide_count": 8,
+                "why_it_works": "Timely coverage gives viewers a reason to save now.",
+                "recommended_plugin": "news_carousel",
+                "plugin_reasoning": "New evidence needs attribution and a sources slide.",
+            },
+        ]
+    }
+
+    angles = _validate_angles(payload, candidate, [facts], cfg)
+
+    assert angles[0].recommended_plugin == "facts_carousel"
+    assert angles[0].plugin_reasoning.startswith("auto-routed")
+    assert angles[1].recommended_plugin == "facts_carousel"
+    assert angles[1].plugin_reasoning == "The topic is evergreen and best told as a short fact list."

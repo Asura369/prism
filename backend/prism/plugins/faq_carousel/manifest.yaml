@@ -1,0 +1,29 @@
+name: faq_carousel
+version: 0.1.0
+description: Educational Q&A carousel (FAQ format)
+entrypoint: prism.plugins.faq_carousel.plugin:FaqCarouselPlugin
+extends: carousel
+output_kind: image_sequence
+
+defaults:
+  aspect_ratio: "4:5"
+  resolution: "1080x1350"
+  slide_count: 7              # cover + 5 Q&As + CTA
+  style: cream
+  cover_headline_max: 60
+  question_max: 90
+  answer_max: 260
+  cta_max: 80
+
+assets:
+  - { kind: script, adapter: llm }
+  - { kind: slide,  adapter: cards }
+
+discovery:
+  preferred_sources: [reddit, google_news_rss, hackernews, google_trends_csv, manual]
+  freshness_window_h: null
+
+policy:
+  ai_disclosure: required
+  min_slides: 5
+  max_slides: 10

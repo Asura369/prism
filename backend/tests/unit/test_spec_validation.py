@@ -54,3 +54,17 @@ def test_malformed_json_fails(facts_plugin):
 def test_fenced_json_is_accepted(facts_plugin, facts_payload):
     spec = facts_plugin.parse_spec("```json\n" + json.dumps(facts_payload) + "\n```")
     assert len(spec.slides) == 7
+
+
+def test_question_over_90_fails_at_parse(faq_plugin, faq_payload):
+    payload = _payload(faq_payload)
+    payload["questions"][0]["question"] = "x" * 91
+    with pytest.raises(SpecValidationError):
+        faq_plugin.parse_spec(json.dumps(payload))
+
+
+def test_answer_over_260_fails_at_parse(faq_plugin, faq_payload):
+    payload = _payload(faq_payload)
+    payload["questions"][0]["answer"] = "x" * 261
+    with pytest.raises(SpecValidationError):
+        faq_plugin.parse_spec(json.dumps(payload))
