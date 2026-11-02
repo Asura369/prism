@@ -32,7 +32,8 @@ class GoogleNewsRSSNews(NewsSourceAdapter):
     def fetch_articles(
         self, *, query: str, max_articles: int, language: str = "en"
     ) -> list[dict[str, Any]]:
-        url = QUERY_URL.format(query=quote_plus(query), lang=language, region=REGION)
+        lang = language.split("-")[0]
+        url = QUERY_URL.format(query=quote_plus(query), lang=lang, region=REGION)
         client = self.client or httpx.Client(timeout=self.timeout_s, headers={"User-Agent": USER_AGENT})
         try:
             response = client.get(url)

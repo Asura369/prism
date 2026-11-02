@@ -40,4 +40,4 @@ class FakeNews(NewsSourceAdapter):
     name = "fake"
 
     def fetch_articles(self, *, query: str, max_articles: int, language: str = "en") -> list[dict[str, Any]]:
-        return ARTICLES[:max_articles]
+        return [dict(article) for article in ARTICLES[:max_articles]]

@@ -11,7 +11,9 @@ from ..base import CarouselPluginBase
 SOURCES_HEADING = "Sources"
 SOURCES_PLACEHOLDER = "Sources are attached after ingest."
 BODY_MAX = 260
-NAME_MAX = 28
+# Keeps each source line inside one wrapped line at the 36px body floor, so a
+# full body can never exceed MAX_BODY_LINES in the renderer.
+TOKEN_MAX = 16
 
 
 class NewsPoint(BaseModel):
@@ -29,7 +31,8 @@ class NewsRaw(BaseModel):
 
 def sources_body(sources: list[dict]) -> str:
     lines = [
-        f"{i}. {source['name'][:NAME_MAX]} — {urlparse(source['url']).netloc.removeprefix('www.')}"
+        f"{i}. {source['name'][:TOKEN_MAX]} — "
+        f"{urlparse(source['url']).netloc.removeprefix('www.')[:TOKEN_MAX]}"
         for i, source in enumerate(sources, start=1)
     ]
     while len(lines) > 1 and len("\n".join(lines)) > BODY_MAX:

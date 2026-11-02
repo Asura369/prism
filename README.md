@@ -25,8 +25,8 @@ API docs: http://localhost:8000/docs
 ## What it is
 
 Prism discovers topics from pluggable sources, generates angle options, and
-runs one of three carousel plugins through a shared pipeline: spec → render →
-export → metadata → policy → validate → publish. Each artifact carries an
+runs one of three carousel plugins through a shared pipeline: spec → ingest (news) →
+render → export → metadata → policy → validate → publish. Each artifact carries an
 immutable provenance manifest and lands in a review queue where you edit
 metadata and approve or reject it.
 

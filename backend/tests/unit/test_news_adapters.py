@@ -36,6 +36,12 @@ def test_fake_news_respects_max_articles():
     assert len(FakeNews().fetch_articles(query="x", max_articles=2)) == 2
 
 
+def test_fake_news_returns_independent_articles():
+    first = FakeNews().fetch_articles(query="x", max_articles=5)
+    first[0]["title"] = "mutated"
+    assert FakeNews().fetch_articles(query="x", max_articles=5)[0]["title"] != "mutated"
+
+
 def test_google_news_news_parses_rss():
     transport = httpx.MockTransport(lambda request: httpx.Response(200, content=RSS_XML))
     adapter = GoogleNewsRSSNews(client=httpx.Client(transport=transport))
@@ -61,6 +67,22 @@ def test_google_news_news_request_locale_and_encoded_query():
     assert "gl=US" in url
     assert "ceid=US:en" in url
     assert "q=deep+sea+mining" in url
+
+
+def test_google_news_news_normalizes_language_region_suffix():
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return httpx.Response(200, content=RSS_XML)
+
+    adapter = GoogleNewsRSSNews(client=httpx.Client(transport=httpx.MockTransport(handler)))
+    adapter.fetch_articles(query="deep sea mining", max_articles=5, language="en-US")
+    url = seen[0]
+    assert "hl=en-US" in url
+    assert "gl=US" in url
+    assert "ceid=US:en" in url
+    assert "en-US-US" not in url
 
 
 def test_news_chain_real(cfg: Config, secrets: Secrets):

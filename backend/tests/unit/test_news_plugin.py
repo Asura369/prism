@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 from prism.adapters.llm.fake import NEWS_SETS
 from prism.domain import SlideSpec
-from prism.plugins.news_carousel.plugin import sources_body
+from prism.render.slides import load_style, render_slide
+
+STYLE_DIR = Path(__file__).resolve().parents[3] / "assets" / "styles"
+FONTS_DIR = Path(__file__).resolve().parents[3] / "assets" / "fonts"
 
 SOURCES = [
     {"name": "ScienceDaily", "url": "https://www.sciencedaily.com/a"},
@@ -65,10 +69,20 @@ def test_build_slides_without_sources_is_safe(news_plugin):
     assert spec.slides[-2].kind == "sources"
 
 
-def test_sources_body_fits_rendered_zone():
-    long = [{"name": "N" * 40, "url": f"https://{'d' * 40}{i}.com"} for i in range(5)]
-    body = sources_body(long)
-    assert len(body) <= 260 and len(body.splitlines()) <= 6
+def _render_sources_slide(news_plugin, sources):
+    spec = _spec_with_sources(news_plugin, sources)
+    slide = next(s for s in spec.slides if s.kind == "sources")
+    style = load_style("slate", STYLE_DIR)
+    render_slide(slide, spec.slides.index(slide) + 1, len(spec.slides), style, (1080, 1350), fonts_dir=FONTS_DIR)
+
+
+def test_sources_slide_renders_adversarial_sources(news_plugin):
+    adversarial = [{"name": "N" * 28, "url": f"https://{'d' * 40}{i}.com"} for i in range(5)]
+    _render_sources_slide(news_plugin, adversarial)
+
+
+def test_sources_slide_renders_realistic_sources(news_plugin):
+    _render_sources_slide(news_plugin, SOURCES)
 
 
 def test_finalize_caption_appends_missing_sources(news_plugin):
