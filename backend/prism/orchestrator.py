@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import shutil
 import sqlite3
@@ -23,6 +24,8 @@ from .errors import (
 from .plugins.base import RenderContext, extract_json
 from .plugins.registry import PluginRegistry
 from .validation import validate_sequence
+
+log = logging.getLogger(__name__)
 
 STAGE_WEIGHTS = {
     "spec": 0.10,
@@ -195,12 +198,17 @@ class Orchestrator:
 
         adapter = None
         articles: list[dict[str, Any]] = []
+        failed_adapters: list[str] = []
         for candidate in self.resolver.require("news"):
             try:
                 articles = candidate.fetch_articles(  # type: ignore[union-attr]
                     query=self.job.topic, max_articles=max_articles, language=language
                 )
-            except Exception:  # noqa: BLE001 - adapter boundary
+            except Exception as exc:  # noqa: BLE001 - adapter boundary
+                name = getattr(candidate, "name", "?")
+                log.warning("news adapter %s failed: %s", name, exc)
+                failed_adapters.append(name)
+                self.manifest.setdefault("ingest_errors", []).append({"adapter": name, "error": str(exc)})
                 continue
             if articles:
                 adapter = candidate
@@ -218,7 +226,12 @@ class Orchestrator:
 
         self.spec.sources = [{"name": a["source_name"], "url": a["url"]} for a in unique]
         self.spec.slides = self.plugin.build_slides(self.spec)
-        self.manifest["ingest"] = {"adapter": "news", "params": params, "sources": self.spec.sources}
+        self.manifest["ingest"] = {
+            "adapter": "news",
+            "params": params,
+            "sources": self.spec.sources,
+            "failed_adapters": failed_adapters,
+        }
         self.manifest["sources"] = self.spec.sources
         self.manifest["adapters"]["news"] = {"name": getattr(adapter, "name", "?")}
         if getattr(adapter, "name", None) != self.resolver.chain_names("news")[0]:
