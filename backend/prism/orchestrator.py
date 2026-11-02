@@ -14,6 +14,7 @@ from .adapters.resolver import AdapterResolver
 from .config import Config
 from .domain import Artifact, Job, JobStatus
 from .errors import (
+    InsufficientSourcesError,
     JobCancelled,
     PolicyViolation,
     SpecValidationError,
@@ -187,7 +188,44 @@ class Orchestrator:
         self.manifest["title"] = spec.title
 
     def _do_ingest(self) -> None:
-        return None
+        params = self.plugin.ingest_config.get("params", {})
+        max_articles = params.get("max_articles", 5)
+        language = params.get("language", "en")
+        min_sources = self.plugin.policy_config.get("min_sources", 2)
+
+        adapter = None
+        articles: list[dict[str, Any]] = []
+        for candidate in self.resolver.require("news"):
+            try:
+                articles = candidate.fetch_articles(  # type: ignore[union-attr]
+                    query=self.job.topic, max_articles=max_articles, language=language
+                )
+            except Exception:  # noqa: BLE001 - adapter boundary
+                continue
+            if articles:
+                adapter = candidate
+                break
+
+        unique: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for article in articles:
+            if article["url"] in seen:
+                continue
+            seen.add(article["url"])
+            unique.append(article)
+        if len(unique) < min_sources:
+            raise InsufficientSourcesError(len(unique), min_sources)
+
+        self.spec.sources = [{"name": a["source_name"], "url": a["url"]} for a in unique]
+        self.spec.slides = self.plugin.build_slides(self.spec)
+        self.manifest["ingest"] = {"adapter": "news", "params": params, "sources": self.spec.sources}
+        self.manifest["sources"] = self.spec.sources
+        self.manifest["adapters"]["news"] = {"name": getattr(adapter, "name", "?")}
+        if getattr(adapter, "name", None) != self.resolver.chain_names("news")[0]:
+            label = f"news:{getattr(adapter, 'name', '?')}"
+            if label not in self.manifest["fallbacks_used"]:
+                self.manifest["fallbacks_used"].append(label)
+            self.manifest["degraded"] = True
 
     def _do_render(self) -> None:
         ctx = RenderContext(
@@ -231,6 +269,7 @@ class Orchestrator:
             caption, hashtags, alt_texts = fallback_caption, fallback_hashtags, []
 
         self.spec.caption = caption[: self.cfg.validation.caption_max_chars]
+        self.spec.caption = self.plugin.finalize_caption(self.spec.caption, self.spec)
         self.spec.hashtags = hashtags[: self.cfg.validation.hashtags_max] or fallback_hashtags
         for index, slide in enumerate(self.spec.slides):
             provided = str(alt_texts[index]).strip() if index < len(alt_texts) and alt_texts[index] else ""
