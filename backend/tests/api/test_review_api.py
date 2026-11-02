@@ -25,8 +25,8 @@ def _app_client(cfg: Config):
     return app, TestClient(app)
 
 
-def _completed_job(cfg: Config, client: TestClient):
-    job_id = client.post("/api/jobs", json={"plugin": "facts_carousel", "topic": "Review me"}).json()["job_id"]
+def _completed_job(cfg: Config, client: TestClient, plugin: str = "facts_carousel", topic: str = "Review me"):
+    job_id = client.post("/api/jobs", json={"plugin": plugin, "topic": topic}).json()["job_id"]
     conn = db.connect(cfg.run.db_path)
     row = db.get_job_row(conn, job_id)
     job = db.get_job(conn, job_id)
@@ -48,6 +48,17 @@ def test_review_queue_and_detail(cfg: Config):
     assert detail["metadata"]["ai_disclosure"] is True
     assert len(detail["artifact_urls"]["slides"]) == 7
     assert detail["artifact_urls"]["download"].endswith("/download")
+
+
+def test_review_exposes_ingested_news_sources(cfg: Config):
+    _, client = _app_client(cfg)
+    job_id = _completed_job(cfg, client, plugin="news_carousel", topic="Deep sea mining")
+    detail = client.get(f"/api/review/{job_id}").json()
+
+    ingested = detail["manifest"]["ingest"]["sources"]
+    assert len(ingested) == 3  # 4 fetched, 1 duplicate URL
+    assert detail["manifest"]["sources"] == ingested
+    assert detail["technical"]["slide_count"] == 8  # cover + 5 points + sources + cta
 
 
 def test_patch_metadata_writes_disk_then_db(cfg: Config):
