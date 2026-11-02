@@ -47,6 +47,22 @@ def test_google_news_news_parses_rss():
     assert articles[1]["source_name"] == "news.google.com"
 
 
+def test_google_news_news_request_locale_and_encoded_query():
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return httpx.Response(200, content=RSS_XML)
+
+    adapter = GoogleNewsRSSNews(client=httpx.Client(transport=httpx.MockTransport(handler)))
+    adapter.fetch_articles(query="deep sea mining", max_articles=5)
+    url = seen[0]
+    assert "hl=en-US" in url
+    assert "gl=US" in url
+    assert "ceid=US:en" in url
+    assert "q=deep+sea+mining" in url
+
+
 def test_news_chain_real(cfg: Config, secrets: Secrets):
     assert AdapterResolver(cfg, secrets).chain_names("news") == ["google_news_rss"]
 

@@ -13,8 +13,9 @@ import httpx
 from ..base import NewsSourceAdapter
 
 USER_AGENT = "prism-news-bot/0.1"
+REGION = "US"
 TAG_RE = re.compile(r"<[^>]+>")
-QUERY_URL = "https://news.google.com/rss/search?q={query}&hl=en-{lang}&gl=US&ceid=US:{lang}"
+QUERY_URL = "https://news.google.com/rss/search?q={query}&hl={lang}-{region}&gl={region}&ceid={region}:{lang}"
 
 
 def _clean(value: str | None) -> str:
@@ -31,7 +32,7 @@ class GoogleNewsRSSNews(NewsSourceAdapter):
     def fetch_articles(
         self, *, query: str, max_articles: int, language: str = "en"
     ) -> list[dict[str, Any]]:
-        url = QUERY_URL.format(query=quote_plus(query), lang=language)
+        url = QUERY_URL.format(query=quote_plus(query), lang=language, region=REGION)
         client = self.client or httpx.Client(timeout=self.timeout_s, headers={"User-Agent": USER_AGENT})
         try:
             response = client.get(url)
