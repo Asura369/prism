@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 
+from prism.adapters.llm.fake import ANGLES
 from prism.config import Config, Secrets
 from prism.discovery import service
 from prism.domain import TrendCandidate
@@ -90,9 +91,13 @@ def test_manual_angles_and_select_flow(cfg: Config):
         assert angles.status_code == 200
         angle_body = angles.json()["angles"]
         assert len(angle_body) == 3
-        assert all(angle["recommended_plugin"] == "facts_carousel" for angle in angle_body)
-        assert angle_body[1]["plugin_reasoning"].startswith("auto-routed")
-        assert angle_body[2]["plugin_reasoning"].startswith("auto-routed")
+        available = {plugin["name"] for plugin in client.get("/api/plugins").json() if plugin["available"]}
+        for angle, raw in zip(angle_body, ANGLES):
+            if raw["recommended_plugin"] in available:
+                assert angle["recommended_plugin"] == raw["recommended_plugin"]
+            else:
+                assert angle["recommended_plugin"] == "facts_carousel"
+                assert angle["plugin_reasoning"].startswith("auto-routed")
         assert angles.json()["candidate"]["candidate"]["title"] == "Why the ocean is still mostly unexplored"
 
         selected = client.post(

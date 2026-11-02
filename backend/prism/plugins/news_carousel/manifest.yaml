@@ -1,0 +1,37 @@
+name: news_carousel
+version: 0.1.0
+description: Sourced news recap carousel with attribution slide
+entrypoint: prism.plugins.news_carousel.plugin:NewsCarouselPlugin
+extends: carousel
+output_kind: image_sequence
+
+defaults:
+  aspect_ratio: "4:5"
+  resolution: "1080x1350"
+  slide_count: 8              # cover + 5 points + sources + CTA
+  style: slate
+  cover_headline_max: 60
+  content_heading_max: 50
+  content_body_max: 260
+  cta_max: 80
+
+assets:
+  - { kind: news_context, adapter: news, params: { min_sources: 2, max_articles: 5, language: en } }
+  - { kind: script,       adapter: llm }
+  - { kind: slide,        adapter: cards }
+
+discovery:
+  preferred_sources: [google_news_rss, hackernews, reddit]
+  freshness_window_h: 48
+
+ingest:
+  adapter: news
+  params: { min_sources: 2, max_articles: 5, language: en }
+
+policy:
+  ai_disclosure: required
+  require_attribution: true
+  min_sources: 2
+  min_slides: 6
+  max_slides: 10
+  block_topics: [politics, tragedy, medical_claims, active_conflict]

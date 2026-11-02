@@ -71,6 +71,13 @@ class CarouselPluginBase(ABC):
     def policy_config(self) -> dict[str, Any]:
         return getattr(self, "_manifest", {}).get("policy", {})
 
+    @property
+    def ingest_config(self) -> dict[str, Any]:
+        return getattr(self, "_manifest", {}).get("ingest", {})
+
+    def finalize_caption(self, caption: str, spec: ContentSpec) -> str:
+        return caption
+
     def attach_manifest(self, manifest: dict[str, Any]) -> None:
         self._manifest = manifest
 
