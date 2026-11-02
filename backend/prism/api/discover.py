@@ -22,6 +22,8 @@ from ..discovery.sources.manual import create_manual_candidate
 
 router = APIRouter(prefix="/discover", tags=["discover"])
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
 
 class ManualBody(BaseModel):
     title: str = Field(min_length=1, max_length=200)
@@ -84,7 +86,9 @@ def upload_trends(
     file: UploadFile = File(...),
     conn: sqlite3.Connection = Depends(get_conn),
 ):
-    content = file.file.read()
+    content = file.file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise api_error(413, "file_too_large", "Trends CSV must be 5 MB or smaller")
     filename = file.filename or "trends.csv"
     try:
         candidates = parse_trends_csv(content, filename)

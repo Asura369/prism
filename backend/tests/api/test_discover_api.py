@@ -131,3 +131,14 @@ def test_csv_upload_and_invalid_csv(cfg: Config):
         assert bad.status_code == 400
         assert bad.json()["error"] == "invalid_trends_csv"
         assert "Expected columns" in bad.json()["message"]
+
+
+def test_csv_upload_rejects_oversized_file(cfg: Config):
+    with _client(cfg) as client:
+        payload = b"a,b\n" * (1024 * 1024) + b"x" * (2 * 1024 * 1024)  # > 5 MB
+        response = client.post(
+            "/api/discover/trends/upload",
+            files={"file": ("big.csv", payload, "text/csv")},
+        )
+        assert response.status_code == 413
+        assert response.json()["error"] == "file_too_large"
