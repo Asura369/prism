@@ -30,6 +30,18 @@ render → export → metadata → policy → validate → publish. Each artifac
 immutable provenance manifest and lands in a review queue where you edit
 metadata and approve or reject it.
 
+## What it looks like
+
+<p align="center">
+  <img src="docs/screenshots/cover.png" width="30%" alt="Cover slide: the ocean floor is back on the agenda" />
+  <img src="docs/screenshots/content.png" width="30%" alt="News point slide with heading and body" />
+  <img src="docs/screenshots/sources.png" width="30%" alt="Sources slide listing attribution for every claim" />
+</p>
+
+One generated `news_carousel` deck (1080×1350 each), from `make demo`: a cover,
+a sourced news point, and the attribution slide. Regenerate them any time with
+`make demo` and look in `review/<job_id>/slides/`.
+
 ## Architecture
 
 React + Vite → FastAPI (:8000) → SQLite (WAL) ← worker process → plugin pipeline
@@ -100,19 +112,11 @@ make test
 
 CI uses `FAKE_ADAPTERS=1` and requires no API keys.
 
-## Resume framing
-
-Prism is a human-in-the-loop content automation framework I built end to end: a
-React + Vite frontend, a FastAPI + SQLite backend, and a separate worker process
-running a shared pipeline (spec → ingest → render → export → metadata → policy →
-validate → publish). Plugins and adapters are small interfaces with
-deterministic fakes, so all three carousel formats are demoable and every
-failure path is testable without an API key or network. The LLM layer is
-provider-agnostic — any OpenAI-compatible endpoint — and every artifact stops in
-a review queue for human approval before anything leaves the machine. A clean
-adapter seam, typed errors, and an enforced review gate were the design work.
-
 ## Scope and non-goals
 
 In: discovery, angles, three carousel plugins, review queue, provenance.
 Out: auth, cloud deploy, Docker, auto-publishing, video, audio, rich media.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
