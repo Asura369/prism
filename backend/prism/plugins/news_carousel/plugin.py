@@ -6,14 +6,15 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, Field
 
 from ...domain import ContentSpec, PolicyResult, SlideSpec
+from ...render.slides import CONTENT_WIDTH, clip_to_width
 from ..base import CarouselPluginBase
 
 SOURCES_HEADING = "Sources"
 SOURCES_PLACEHOLDER = "Sources are attached after ingest."
 BODY_MAX = 260
-# Keeps each source line inside one wrapped line at the 36px body floor, so a
-# full body can never exceed MAX_BODY_LINES in the renderer.
-TOKEN_MAX = 16
+# Leaves room for the "1. " prefix and keeps every source line on one wrapped
+# line at the smallest body size, so the slide can never exceed MAX_BODY_LINES.
+LINE_WIDTH = CONTENT_WIDTH - 40
 
 
 class NewsPoint(BaseModel):
@@ -31,8 +32,10 @@ class NewsRaw(BaseModel):
 
 def sources_body(sources: list[dict]) -> str:
     lines = [
-        f"{i}. {source['name'][:TOKEN_MAX]} — "
-        f"{urlparse(source['url']).netloc.removeprefix('www.')[:TOKEN_MAX]}"
+        clip_to_width(
+            f"{i}. {source['name']} — {urlparse(source['url']).netloc.removeprefix('www.')}",
+            LINE_WIDTH,
+        )
         for i, source in enumerate(sources, start=1)
     ]
     while len(lines) > 1 and len("\n".join(lines)) > BODY_MAX:

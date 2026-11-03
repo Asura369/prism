@@ -28,6 +28,7 @@ HEADING_SIZES = {"cover": (84, 72, 64), "default": (56, 48, 40)}
 BODY_SIZES = (40, 38, 36)
 MAX_HEADING_LINES = 3
 MAX_BODY_LINES = 6
+BODY_GAP = 72
 
 
 @dataclass
@@ -111,6 +112,32 @@ def _fit(
     raise SlideOverflowError(0, "text")
 
 
+def _heading_origin(lines: list[str], line_height: int, has_body: bool) -> tuple[int, int]:
+    """Where the accent bar and heading text start. Body-less slides (cover, CTA)
+    opt into vertical centring so they don't leave the canvas half empty."""
+    if has_body:
+        return HEADING_TOP, HEADING_TOP + 40
+    zone_top, zone_bottom = HEADING_TOP, BODY_BOTTOM - 40
+    block_height = len(lines) * line_height
+    heading_y = zone_top + max(0, (zone_bottom - zone_top - block_height) // 2)
+    return max(MARGIN, heading_y - 40), heading_y
+
+
+def clip_to_width(text: str, max_width: int = CONTENT_WIDTH, size: int = BODY_SIZES[-1]) -> str:
+    """Shorten text until it fits one body line, marking the cut with an ellipsis.
+
+    Plugins use this to build multi-line bodies (e.g. a sources list) that are
+    guaranteed to wrap to one line per line at the smallest body size.
+    """
+    font = _font(str(_DEFAULT_FONTS_DIR), size, False)
+    if font.getlength(text) <= max_width:
+        return text
+    words = text.split()
+    while words and font.getlength(" ".join(words) + "…") > max_width:
+        words.pop()
+    return " ".join(words) + "…"
+
+
 def _bbox_inside(bbox: tuple[float, float, float, float]) -> bool:
     left, top, right, bottom = SAFE_RECT
     return bbox[0] >= left - 1 and bbox[1] >= top - 1 and bbox[2] <= right + 1 and bbox[3] <= bottom + 1
@@ -158,18 +185,11 @@ def render_slide(
             zone_height=heading_zone,
         )
 
-        accent_y = HEADING_TOP
-        heading_y = HEADING_TOP + 40
+        has_body = bool(slide.body and slide.body.strip())
         heading_spacing = max(0, heading_line_h - int(heading_font.size * 0.78))
         heading_text_block = "\n".join(heading_lines)
-        _check_bbox(draw, (CONTENT_LEFT, heading_y), heading_text_block, heading_font, heading_spacing, "heading")
-        heading_bottom = draw.multiline_textbbox(
-            (CONTENT_LEFT, heading_y), heading_text_block, font=heading_font, spacing=heading_spacing
-        )[3]
-        if heading_bottom > BODY_TOP - 20:
-            raise SlideOverflowError(index, "heading")
-
-        if slide.body:
+        body_spacing = body_y = None
+        if has_body:
             body_text = slide.body.strip()
             body_font, body_lines, body_line_h = _fit(
                 draw,
@@ -183,7 +203,24 @@ def render_slide(
             )
             body_spacing = max(0, body_line_h - int(body_font.size * 0.8))
             body_block = "\n".join(body_lines)
-            _check_bbox(draw, (CONTENT_LEFT, BODY_TOP), body_block, body_font, body_spacing, "body")
+            heading_box = draw.multiline_textbbox(
+                (CONTENT_LEFT, 0), heading_text_block, font=heading_font, spacing=heading_spacing
+            )
+            body_box = draw.multiline_textbbox((CONTENT_LEFT, 0), body_block, font=body_font, spacing=body_spacing)
+            group_height = (heading_box[3] - heading_box[1]) + BODY_GAP + (body_box[3] - body_box[1])
+            heading_y = HEADING_TOP + max(0, (BODY_BOTTOM - HEADING_TOP - group_height) // 2)
+            accent_y = max(MARGIN, heading_y - 40)
+            _check_bbox(draw, (CONTENT_LEFT, heading_y), heading_text_block, heading_font, heading_spacing, "heading")
+            heading_bottom = draw.multiline_textbbox(
+                (CONTENT_LEFT, heading_y), heading_text_block, font=heading_font, spacing=heading_spacing
+            )[3]
+            body_y = heading_bottom + BODY_GAP
+            _check_bbox(draw, (CONTENT_LEFT, body_y), body_block, body_font, body_spacing, "body")
+            if body_y + (body_box[3] - body_box[1]) > BODY_BOTTOM:
+                raise SlideOverflowError(index, "body")
+        else:
+            accent_y, heading_y = _heading_origin(heading_lines, heading_line_h, has_body)
+            _check_bbox(draw, (CONTENT_LEFT, heading_y), heading_text_block, heading_font, heading_spacing, "heading")
 
         footer_font = _font(fonts, 24, False)
         page_text = f"{index} / {total}"
@@ -201,7 +238,7 @@ def render_slide(
         )
         if slide.body:
             draw.multiline_text(
-                (CONTENT_LEFT, BODY_TOP),
+                (CONTENT_LEFT, body_y),
                 "\n".join(body_lines),
                 font=body_font,
                 fill=style.body_color,

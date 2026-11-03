@@ -8,7 +8,16 @@ from PIL import Image
 
 from prism.domain import SlideSpec
 from prism.errors import SlideOverflowError
-from prism.render.slides import CANVAS, CONTENT_LEFT, CONTENT_RIGHT, MARGIN, load_style, render_slide
+from prism.render.slides import (
+    BODY_BOTTOM,
+    CANVAS,
+    CONTENT_LEFT,
+    CONTENT_RIGHT,
+    HEADING_TOP,
+    MARGIN,
+    load_style,
+    render_slide,
+)
 
 STYLE_DIR = Path(__file__).resolve().parents[3] / "assets" / "styles"
 
@@ -76,3 +85,32 @@ def test_content_engine_uses_safe_margins():
     assert CONTENT_LEFT == MARGIN == 80
     assert CONTENT_RIGHT == 1000
     assert style.name == "cream"
+
+
+def _content_rows(img: Image.Image, bg_rgb: tuple[int, int, int]) -> tuple[int, int]:
+    """First and last row outside the top/footer bands that holds non-background pixels."""
+    pixels = img.load()
+    rows = [y for y in range(100, 1150, 4) if any(pixels[x, y] != bg_rgb for x in range(80, 1000, 4))]
+    return min(rows), max(rows)
+
+
+def test_cover_heading_is_vertically_centred():
+    from PIL import ImageColor
+
+    style = load_style("cream", STYLE_DIR)
+    img = render_slide(SlideSpec("cover", "This Fish Climbs Trees", None), 1, 7, style)
+    top, bottom = _content_rows(img, ImageColor.getrgb(style.bg_color))
+    centre = (top + bottom) / 2
+    zone_centre = (HEADING_TOP + BODY_BOTTOM - 40) / 2
+    assert abs(centre - zone_centre) < 60, f"cover text sits at {centre}, expected near {zone_centre}"
+
+
+def test_content_slide_heading_and_body_form_a_centred_block():
+    from PIL import ImageColor
+
+    style = load_style("cream", STYLE_DIR)
+    img = render_slide(SlideSpec("fact", "It leaves the water on purpose", "A body line."), 2, 7, style)
+    top, bottom = _content_rows(img, ImageColor.getrgb(style.bg_color))
+    centre = (top + bottom) / 2
+    zone_centre = (HEADING_TOP + BODY_BOTTOM) / 2
+    assert abs(centre - zone_centre) < 80, f"content block sits at {centre}, expected near {zone_centre}"

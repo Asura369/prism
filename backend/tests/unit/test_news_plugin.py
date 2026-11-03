@@ -85,6 +85,33 @@ def test_sources_slide_renders_realistic_sources(news_plugin):
     _render_sources_slide(news_plugin, SOURCES)
 
 
+def test_source_names_are_readable_not_chopped(news_plugin):
+    sources = [
+        {"name": "The New York Times", "url": "https://www.nytimes.com/a"},
+        {"name": "Associated Press", "url": "https://apnews.com/b"},
+    ]
+    body = next(s.body for s in _spec_with_sources(news_plugin, sources).slides if s.kind == "sources")
+    assert "The New York Times" in body
+    assert "Associated Press" in body
+
+
+def test_overlong_source_names_end_with_an_ellipsis(news_plugin):
+    sources = [{"name": "The Wall Street Journal of Record and Opinion", "url": "https://www.wsj.com/x"}]
+    body = next(s.body for s in _spec_with_sources(news_plugin, sources).slides if s.kind == "sources")
+    assert body.endswith("…")
+
+
+def test_five_long_sources_still_render(news_plugin):
+    long_sources = [
+        {"name": "The Wall Street Journal", "url": "https://www.wsj.com/a"},
+        {"name": "The Washington Post", "url": "https://www.washingtonpost.com/b"},
+        {"name": "Los Angeles Times", "url": "https://www.latimes.com/c"},
+        {"name": "The New York Times", "url": "https://www.nytimes.com/d"},
+        {"name": "Associated Press", "url": "https://apnews.com/e"},
+    ]
+    _render_sources_slide(news_plugin, long_sources)
+
+
 def test_finalize_caption_appends_missing_sources(news_plugin):
     spec = _spec_with_sources(news_plugin)
     caption = news_plugin.finalize_caption("A recap with no attribution.", spec)
