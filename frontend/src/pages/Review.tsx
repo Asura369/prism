@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Check, Download, RotateCcw, X } from "lucide-react";
 import { api } from "@/api/client";
 import { ImageGallery } from "@/components/ImageGallery";

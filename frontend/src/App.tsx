@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Route, Routes } from "react-router-dom";
+import { NavLink, Outlet, Route, Routes } from "react-router";
 import { Compass, LayoutGrid, Plus, Settings as SettingsIcon, Puzzle } from "lucide-react";
 import { WorkerStatusBanner } from "@/components/WorkerStatusBanner";
 import { WorkerDot } from "@/components/WorkerDot";

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { StatusChip } from "@/components/StatusChip";
 import { Badge } from "@/components/ui/badge";
 import { relativeTime } from "@/lib/utils";
