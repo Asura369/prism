@@ -5,16 +5,15 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
 import yaml
 
-from ..adapters.resolver import AdapterResolver
+from ..adapters.resolver import INTERFACES, AdapterResolver
 from ..config import Config
 
 log = logging.getLogger(__name__)
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
-ADAPTER_INTERFACE = {"llm": "llm", "cards": "cards", "export": "export", "news": "news"}
 
 
 @dataclass
@@ -27,8 +26,6 @@ class PluginInfo:
     manifest: dict[str, Any]
     available: bool
     missing_adapters: list[str] = field(default_factory=list)
-    class_name: str = ""
-    error: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -39,9 +36,7 @@ class PluginInfo:
             "defaults": self.defaults,
             "available": self.available,
             "missing_adapters": self.missing_adapters,
-            "class_name": self.class_name,
             "manifest": self.manifest,
-            "error": self.error,
         }
 
 
@@ -81,8 +76,7 @@ class PluginRegistry:
         missing: list[str] = []
         for asset in manifest.get("assets", []):
             hint = asset.get("adapter")
-            interface = ADAPTER_INTERFACE.get(hint or "")
-            if interface and not self.resolver.resolve(interface):
+            if hint in INTERFACES and not self.resolver.resolve(hint):
                 missing.append(hint)
         info = PluginInfo(
             name=name,
@@ -93,7 +87,6 @@ class PluginRegistry:
             manifest=manifest,
             available=not missing,
             missing_adapters=sorted(set(missing)),
-            class_name=class_name,
         )
         self._plugins[name] = plugin
         return info

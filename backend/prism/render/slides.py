@@ -5,11 +5,11 @@ from functools import lru_cache
 from pathlib import Path
 
 import yaml
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 
 from ..domain import SlideSpec
 from ..errors import ConfigError, SlideOverflowError
-from .frames import solid_background, subtle_gradient
+from .frames import subtle_gradient
 
 CANVAS = (1080, 1350)
 MARGIN = 80
@@ -40,7 +40,6 @@ class StylePreset:
     body_color: str
     accent_color: str
     footer_color: str
-    font_family: str = "Inter"
 
 
 def load_style(name: str, styles_dir: Path) -> StylePreset:
@@ -57,7 +56,6 @@ def load_style(name: str, styles_dir: Path) -> StylePreset:
         body_color=data["body_color"],
         accent_color=data["accent_color"],
         footer_color=data["footer_color"],
-        font_family=data.get("font_family", "Inter"),
     )
 
 
@@ -163,7 +161,7 @@ def render_slide(
     if style.bg_gradient:
         img = subtle_gradient(width, height, *style.bg_gradient)
     else:
-        img = solid_background(width, height, style.bg_color)
+        img = Image.new("RGB", (width, height), ImageColor.getrgb(style.bg_color))
     draw = ImageDraw.Draw(img)
     fonts = str(fonts_dir or _DEFAULT_FONTS_DIR)
 

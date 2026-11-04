@@ -2,7 +2,6 @@ run:
   output_dir: ./review
   work_dir: ./work
   db_path: ./data/prism.db
-  keep_intermediates: false
   max_retries: 3
   retry_backoff_s: [1, 4, 16]
   worker_heartbeat_stale_s: 15
@@ -23,8 +22,6 @@ adapters:
     fallback: [fake]
   cards:
     default: templated
-    templated: { style: cream }
-    fallback: []
   export:
     default: zip
 
@@ -36,11 +33,8 @@ discovery:
   sources:
     google_news_rss:   { enabled: true }
     hackernews:        { enabled: true }
-    google_trends_csv: { enabled: true }
-    manual:            { enabled: true }
   clustering:
-    method: difflib          # ⚠️ TUNE — replace with embeddings if precision matters
-    threshold: 0.80          # ⚠️ TUNE
+    threshold: 0.80          # ⚠️ TUNE — replace with embeddings if precision matters
   cache_ttl_min: 15
   fetch_timeout_s: 10
   max_candidates_per_source: 40
@@ -65,10 +59,7 @@ discovery:
     route_plugin_via_llm: true
 
 validation:
-  min_slide_count: 5
-  max_slide_count: 12
   min_file_size_mb: 0.05
-  min_body_font_px: 36
   caption_max_chars: 2200
   hashtags_max: 30
 

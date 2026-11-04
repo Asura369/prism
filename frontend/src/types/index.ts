@@ -70,7 +70,6 @@ export interface PluginInfo {
   defaults: Record<string, unknown>;
   available: boolean;
   missing_adapters: string[];
-  class_name?: string;
   manifest?: Record<string, unknown>;
 }
 

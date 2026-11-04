@@ -56,7 +56,7 @@ def test_review_exposes_ingested_news_sources(cfg: Config):
     detail = client.get(f"/api/review/{job_id}").json()
 
     ingested = detail["manifest"]["ingest"]["sources"]
-    assert len(ingested) == 3  # 4 fetched, 1 duplicate URL
+    assert len(ingested) == 4  # 4 fetched, all unique URLs
     assert detail["manifest"]["sources"] == ingested
     assert detail["technical"]["slide_count"] == 8  # cover + 5 points + sources + cta
 

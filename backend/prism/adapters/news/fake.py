@@ -28,7 +28,7 @@ ARTICLES: list[dict[str, Any]] = [
     },
     {
         "title": "Reef recovery is slower than expected",
-        "url": "https://example.news/reef",
+        "url": "https://example.news/reef-recovery",
         "snippet": "A follow-up study finds that coral recovery lags behind the pace of repeated heat waves.",
         "published_at": "2026-10-29T00:00:00+00:00",
         "source_name": "ScienceDaily",

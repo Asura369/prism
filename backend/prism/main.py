@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -41,12 +42,29 @@ def create_app(cfg: Config | None = None, secrets: Secrets | None = None) -> Fas
     app.state.registry = registry
     app.state.logger = log
 
+    # Local-only service: reject requests whose Host was rebound to point at us.
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["127.0.0.1", "localhost", "testserver"],
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+            "script-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'",
+        )
+        return response
     app.include_router(health.router, prefix="/api")
     app.include_router(jobs.router, prefix="/api")
     app.include_router(plugins.router, prefix="/api")
@@ -75,7 +93,7 @@ def create_app(cfg: Config | None = None, secrets: Secrets | None = None) -> Fas
         code = "".join(("-" + c.lower()) if c.isupper() else c for c in exc.error_class).lstrip("-")
         return JSONResponse(
             status_code=status,
-            content={"error": code, "message": exc.message, "context": exc.context},
+            content={"error": code, "message": exc.message},
         )
 
     dist = ROOT / "frontend" / "dist"
@@ -84,6 +102,8 @@ def create_app(cfg: Config | None = None, secrets: Secrets | None = None) -> Fas
 
         @app.get("/{full_path:path}", include_in_schema=False)
         async def spa_fallback(full_path: str):
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="Not found")
             dist_root = dist.resolve()
             candidate = (dist / full_path).resolve()
             if full_path and candidate.is_relative_to(dist_root) and candidate.is_file():

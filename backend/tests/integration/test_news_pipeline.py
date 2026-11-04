@@ -54,7 +54,7 @@ def test_news_pipeline_end_to_end(cfg: Config, secrets: Secrets):
     assert manifest["ingest"]["adapter"] == "news"
     assert manifest["ingest"]["failed_adapters"] == []
     assert manifest["ingest"]["params"] == orch.plugin.ingest_config["params"]
-    assert len(manifest["ingest"]["sources"]) == 3  # 4 fetched, 1 duplicate URL
+    assert len(manifest["ingest"]["sources"]) == 4  # 4 fetched, all unique URLs
     assert manifest["sources"] == manifest["ingest"]["sources"] == orch.spec.sources
 
     metadata = json.loads(artifact.metadata.read_text())

@@ -17,12 +17,12 @@ def _parse_resolution(resolution: str) -> tuple[int, int]:
 class TemplatedCardRenderer(CardRendererAdapter):
     name = "templated"
 
-    def __init__(self, cfg: Config | None = None, styles_dir: Path | None = None, fonts_dir: Path | None = None):
-        self.styles_dir = Path(styles_dir) if styles_dir else (resolve_path(cfg.assets.styles_dir, cfg.base_dir) if cfg else None)
-        self.fonts_dir = Path(fonts_dir) if fonts_dir else (resolve_path(cfg.assets.fonts_dir, cfg.base_dir) if cfg else None)
-        if not self.styles_dir or not self.styles_dir.exists():
+    def __init__(self, cfg: Config):
+        self.styles_dir = resolve_path(cfg.assets.styles_dir, cfg.base_dir)
+        self.fonts_dir = resolve_path(cfg.assets.fonts_dir, cfg.base_dir)
+        if not self.styles_dir.exists():
             raise FileNotFoundError(f"Styles directory not found: {self.styles_dir}")
-        if not self.fonts_dir or not self.fonts_dir.exists():
+        if not self.fonts_dir.exists():
             raise FileNotFoundError(f"Fonts directory not found: {self.fonts_dir}")
 
     def available_styles(self) -> list[str]:

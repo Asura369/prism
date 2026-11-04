@@ -8,6 +8,7 @@ import httpx
 import pytest
 
 from prism import db
+from prism.adapters.resolver import Completion
 from prism.config import Config, Secrets
 from prism.discovery import service
 from prism.discovery.angles import _validate_angles, default_plugin_for
@@ -102,8 +103,8 @@ def test_scoring_is_normalized_and_hard_filters_unsafe(cfg: Config):
         def resolve(self, interface):
             return [self.llm] if interface == "llm" else []
 
-        def require(self, interface):
-            return [self.llm]
+        def complete(self, prompt, *, json_schema=None):
+            return Completion(self.llm.complete(prompt), "fake", "fake", [])
 
     safe = _candidate("a", "Safe topic")
     unsafe = _candidate("b", "Unsafe topic")

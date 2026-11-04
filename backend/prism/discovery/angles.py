@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import sqlite3
-from dataclasses import asdict
 from datetime import datetime, timezone
 
 from ..adapters.resolver import AdapterResolver
@@ -10,8 +8,6 @@ from ..domain import Angle, ScoredCandidate, TrendCandidate
 from ..errors import AngleGenerationError
 from ..plugins.base import extract_json
 from ..plugins.registry import PluginInfo, PluginRegistry
-from .cache import store_angles
-from .llm import call_llm
 
 ANGLE_SCHEMA = {
     "type": "object",
@@ -161,7 +157,7 @@ def generate_angles(
         raise AngleGenerationError("No installed plugin is available")
     prompt = _angles_prompt(candidate.candidate, plugins, cfg.discovery.angles.count)
     try:
-        output = call_llm(cfg, resolver, prompt, json_schema=ANGLE_SCHEMA)
+        output = resolver.complete(prompt, json_schema=ANGLE_SCHEMA).text
         angles = _validate_angles(extract_json(output), candidate.candidate, plugins, cfg)
     except Exception as exc:  # noqa: BLE001 - one re-prompt
         retry_prompt = (
@@ -169,27 +165,9 @@ def generate_angles(
             "Return exactly the requested JSON shape."
         )
         try:
-            output = call_llm(cfg, resolver, retry_prompt, json_schema=ANGLE_SCHEMA)
+            output = resolver.complete(retry_prompt, json_schema=ANGLE_SCHEMA).text
             angles = _validate_angles(extract_json(output), candidate.candidate, plugins, cfg)
         except Exception as retry_exc:  # noqa: BLE001
             raise AngleGenerationError(str(retry_exc)) from retry_exc
     return angles
 
-
-def store_generated_angles(
-    cfg: Config,
-    conn: sqlite3.Connection,
-    candidate: ScoredCandidate,
-    angles: list[Angle],
-) -> None:
-    store_angles(
-        conn,
-        candidate.candidate.id,
-        {
-            "candidate_id": candidate.candidate.id,
-            "title": candidate.candidate.title,
-            "angles": [asdict(angle) for angle in angles],
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-        },
-        cfg,
-    )

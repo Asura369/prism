@@ -88,14 +88,14 @@ job fails silently.
 | Topic matches `block_topics` | `PolicyViolation` | Job FAILED at `policy`; remove the blocked phrase. |
 | Card renderer exhausts retries on a slide | `SlideRenderError` | Job FAILED at `render`; the failing slide index is in the error context. |
 | Text does not fit a slide's safe area | `SlideOverflowError` | Job FAILED at `render`; shorten the offending field. |
-| Artifact fails checks (size, alt text, caption, slide count) | `ValidationError` with reasons | Job FAILED at `validate`; each reason is listed in the manifest. |
+| Artifact fails checks (size, alt text, caption) | `ValidationError` with reasons | Job FAILED at `validate`; each reason is listed in the manifest. |
+| Deck breaks the plugin's slide-count or slide-kind rules | `PolicyViolation` | Job FAILED at `policy`; the plugin manifest defines `min_slides`/`max_slides`. |
 | Worker dies mid-job | job FAILED with `WorkerLost` once the heartbeat is stale (~15 s) | Restart `make worker`, then re-run the job; runs are not resumed. |
 | Trends CSV upload over 5 MB | HTTP 413 `file_too_large` | Trim the CSV and upload again. |
 
 Metadata generation is the one soft failure: if the LLM call fails, captions and
 alt text fall back to derived values and the job still succeeds. `ConfigError`
-flags a broken setup (invalid `config.yaml`, missing style or font), and
-`RetryExhausted` is the retry helper's exhausted-attempts error. Every error
+flags a broken setup (invalid `config.yaml`, missing style or font). Every error
 serializes to `{error_class, stage, message, retryable, context}`.
 
 ## Demo

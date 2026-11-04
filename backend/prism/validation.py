@@ -45,11 +45,6 @@ def validate_sequence(zip_path: Path, spec: ContentSpec, cfg: Config, styles_dir
         reasons.append(f"Caption exceeds {cfg.validation.caption_max_chars} characters")
     if len(spec.hashtags) > cfg.validation.hashtags_max:
         reasons.append(f"More than {cfg.validation.hashtags_max} hashtags")
-    if not (cfg.validation.min_slide_count <= len(spec.slides) <= cfg.validation.max_slide_count):
-        reasons.append(
-            f"Slide count {len(spec.slides)} outside "
-            f"[{cfg.validation.min_slide_count}, {cfg.validation.max_slide_count}]"
-        )
     styles_dir = styles_dir or Path(cfg.assets.styles_dir)
     if not (styles_dir / f"{spec.style}.yaml").exists():
         reasons.append(f"Style preset {spec.style!r} not found")

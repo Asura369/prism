@@ -8,7 +8,6 @@ from ..adapters.resolver import AdapterResolver
 from ..config import Config
 from ..domain import ScoredCandidate, TrendCandidate, TrendScore
 from ..plugins.base import extract_json
-from .llm import call_llm
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +49,18 @@ def _engagement(candidate: TrendCandidate) -> float:
     return 0.5
 
 
+def fallback_score(candidate: TrendCandidate, cfg: Config) -> TrendScore:
+    return TrendScore(
+        heuristic=heuristic_score(candidate, cfg),
+        safety=0.6,
+        visual_potential=0.5,
+        angle_ability=0.5,
+        saturation=0.5,
+        combined=combine(candidate, safety=0.6, visual=0.5, angle=0.5, saturation=0.5, cfg=cfg),
+        reasoning="heuristic-only mode",
+    )
+
+
 def heuristic_score(candidate: TrendCandidate, cfg: Config) -> float:
     recency_h = float(candidate.metrics.get("recency_h", 24.0))
     recency_score = max(0.0, 1.0 - recency_h / 48)
@@ -79,28 +90,7 @@ class HeuristicOnlyScorer(TrendScorerAdapter):
         self.cfg = cfg
 
     def score(self, candidates: list[TrendCandidate]) -> list[TrendScore]:
-        out: list[TrendScore] = []
-        for candidate in candidates:
-            heuristic = heuristic_score(candidate, self.cfg)
-            out.append(
-                TrendScore(
-                    heuristic=heuristic,
-                    safety=0.6,
-                    visual_potential=0.5,
-                    angle_ability=0.5,
-                    saturation=0.5,
-                    combined=combine(
-                        candidate,
-                        safety=0.6,
-                        visual=0.5,
-                        angle=0.5,
-                        saturation=0.5,
-                        cfg=self.cfg,
-                    ),
-                    reasoning="heuristic-only mode",
-                )
-            )
-        return out
+        return [fallback_score(candidate, self.cfg) for candidate in candidates]
 
 
 class HeuristicLLMScorer(TrendScorerAdapter):
@@ -139,7 +129,7 @@ class HeuristicLLMScorer(TrendScorerAdapter):
         by_id: dict[str, dict] = {}
         for start in range(0, len(candidates), 20):
             batch = candidates[start : start + 20]
-            output = call_llm(self.cfg, self.resolver, self._prompt(batch), json_schema=SCORE_SCHEMA)
+            output = self.resolver.complete(self._prompt(batch), json_schema=SCORE_SCHEMA).text
             payload = extract_json(output)
             for item in payload.get("scores", []):
                 if isinstance(item, dict) and item.get("id"):
@@ -149,18 +139,7 @@ class HeuristicLLMScorer(TrendScorerAdapter):
         for candidate in candidates:
             item = by_id.get(candidate.id)
             if not item:
-                heuristic = heuristic_score(candidate, self.cfg)
-                out.append(
-                    TrendScore(
-                        heuristic=heuristic,
-                        safety=0.6,
-                        visual_potential=0.5,
-                        angle_ability=0.5,
-                        saturation=0.5,
-                        combined=combine(candidate, safety=0.6, visual=0.5, angle=0.5, saturation=0.5, cfg=self.cfg),
-                        reasoning="heuristic-only mode",
-                    )
-                )
+                out.append(fallback_score(candidate, self.cfg))
                 continue
             safety = _clamp(float(item.get("safety", 0.5)))
             visual = _clamp(float(item.get("visual_potential", 0.5)))

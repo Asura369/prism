@@ -24,11 +24,11 @@ RSS_XML = """<?xml version="1.0"?><rss version="2.0"><channel>
 </channel></rss>"""
 
 
-def test_fake_news_is_deterministic_with_one_duplicate_url():
+def test_fake_news_is_deterministic_with_unique_urls():
     first = FakeNews().fetch_articles(query="deep sea mining", max_articles=5)
     assert first == FakeNews().fetch_articles(query="deep sea mining", max_articles=5)
     assert len(first) == 4
-    assert len({a["url"] for a in first}) == 3
+    assert len({a["url"] for a in first}) == 4
     assert all(set(a) == {"title", "url", "snippet", "published_at", "source_name"} for a in first)
 
 

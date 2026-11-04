@@ -102,13 +102,6 @@ class ContentSpec:
 
 
 @dataclass
-class AssetRequest:
-    kind: str
-    adapter_hint: str | None
-    params: dict[str, Any]
-
-
-@dataclass
 class Asset:
     kind: str
     path: Path

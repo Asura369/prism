@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 from typing import Any
 from pathlib import Path
 
 import yaml
-from dotenv import dotenv_values
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,7 +19,6 @@ class RunConfig(_Model):
     output_dir: str = "./review"
     work_dir: str = "./work"
     db_path: str = "./data/prism.db"
-    keep_intermediates: bool = False
     max_retries: int = 3
     retry_backoff_s: list[float] = Field(default_factory=lambda: [1, 4, 16])
     worker_heartbeat_stale_s: int = 15
@@ -40,14 +37,8 @@ class LLMConfig(_Model):
     fallback: list[str] = Field(default_factory=lambda: ["fake"])
 
 
-class TemplatedConfig(_Model):
-    style: str = "cream"
-
-
 class CardsConfig(_Model):
     default: str = "templated"
-    templated: TemplatedConfig = Field(default_factory=TemplatedConfig)
-    fallback: list[str] = Field(default_factory=list)
 
 
 class ExportConfig(_Model):
@@ -72,12 +63,9 @@ class SourceConfig(_Model):
 class DiscoverySourcesConfig(_Model):
     google_news_rss: SourceConfig = Field(default_factory=SourceConfig)
     hackernews: SourceConfig = Field(default_factory=SourceConfig)
-    google_trends_csv: SourceConfig = Field(default_factory=SourceConfig)
-    manual: SourceConfig = Field(default_factory=SourceConfig)
 
 
 class ClusteringConfig(_Model):
-    method: str = "difflib"
     threshold: float = 0.80
 
 
@@ -123,10 +111,7 @@ class DiscoveryConfig(_Model):
 
 
 class ValidationConfig(_Model):
-    min_slide_count: int = 5
-    max_slide_count: int = 12
     min_file_size_mb: float = 0.05
-    min_body_font_px: int = 36
     caption_max_chars: int = 2200
     hashtags_max: int = 30
 
@@ -167,19 +152,9 @@ def _config_path(explicit: Path | None = None, env_config: str | None = None) ->
     return None
 
 
-def _dotenv_values(enabled: bool) -> dict[str, str]:
-    if not enabled:
-        return {}
-    values: dict[str, str] = {}
-    for candidate in (Path(".env"), Path("../.env")):
-        if candidate.exists():
-            values.update({key: value for key, value in dotenv_values(candidate).items() if value is not None})
-    return values
-
-
 def load_config(path: Path | None = None, *, env_file: bool = True) -> Config:
-    env = {**_dotenv_values(env_file), **os.environ}
-    cfg_path = _config_path(path, env.get("PRISM_CONFIG"))
+    env = Secrets(_env_file=(".env", "../.env") if env_file else None)
+    cfg_path = _config_path(path, env.prism_config)
     data: dict = {}
     if cfg_path:
         try:
@@ -188,8 +163,8 @@ def load_config(path: Path | None = None, *, env_file: bool = True) -> Config:
             raise ConfigError(f"Invalid YAML in {cfg_path}: {exc}") from exc
     cfg = Config.model_validate(data)
     cfg.base_dir = cfg_path.resolve().parent if cfg_path else Path.cwd()
-    if env.get("PRISM_DB_PATH"):
-        cfg.run.db_path = env["PRISM_DB_PATH"]
+    if env.prism_db_path:
+        cfg.run.db_path = env.prism_db_path
     return cfg
 
 

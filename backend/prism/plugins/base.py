@@ -12,7 +12,6 @@ from pydantic import BaseModel, ValidationError as PydanticValidationError
 from ..config import Config
 from ..domain import (
     Asset,
-    AssetRequest,
     ContentSpec,
     ImageSequenceRecipe,
     Job,
@@ -58,22 +57,24 @@ class CarouselPluginBase(ABC):
     version: ClassVar[str]
     output_kind: ClassVar[str] = "image_sequence"
     raw_model: ClassVar[type[BaseModel]]
+    slide_kinds: ClassVar[frozenset[str]] = frozenset()
 
     def __init__(self, cfg: Config, assets_dir: Path | None = None):
         self.cfg = cfg
         self.assets_dir = assets_dir or Path.cwd()
+        self._manifest: dict[str, Any] = {}
 
     @property
     def manifest_defaults(self) -> dict[str, Any]:
-        return getattr(self, "_manifest", {}).get("defaults", {})
+        return self._manifest.get("defaults", {})
 
     @property
     def policy_config(self) -> dict[str, Any]:
-        return getattr(self, "_manifest", {}).get("policy", {})
+        return self._manifest.get("policy", {})
 
     @property
     def ingest_config(self) -> dict[str, Any]:
-        return getattr(self, "_manifest", {}).get("ingest", {})
+        return self._manifest.get("ingest", {})
 
     def finalize_caption(self, caption: str, spec: ContentSpec) -> str:
         return caption
@@ -130,13 +131,6 @@ class CarouselPluginBase(ABC):
 
     @abstractmethod
     def build_slides(self, spec: ContentSpec) -> list[SlideSpec]: ...
-
-    def required_assets(self, spec: ContentSpec) -> list[AssetRequest]:
-        assets = getattr(self, "_manifest", {}).get("assets", [])
-        return [
-            AssetRequest(kind=item["kind"], adapter_hint=item.get("adapter"), params=item.get("params", {}))
-            for item in assets
-        ]
 
     def build_assets(self, spec: ContentSpec, ctx: RenderContext) -> list[Asset]:
         cards_chain = ctx.resolver.require("cards")
@@ -201,4 +195,14 @@ class CarouselPluginBase(ABC):
             reasons.append("Deck has no slides")
         if self.cfg.policy.ai_disclosure == "required" and not spec.raw.get("ai_disclosure", True):
             reasons.append("AI disclosure is required")
+        if self.slide_kinds:
+            min_slides = self.policy_config.get("min_slides", 5)
+            max_slides = self.policy_config.get("max_slides", 10)
+            if len(spec.slides) < min_slides:
+                reasons.append(f"Expected at least {min_slides} slides, got {len(spec.slides)}")
+            if len(spec.slides) > max_slides:
+                reasons.append(f"Expected at most {max_slides} slides, got {len(spec.slides)}")
+            unexpected = {slide.kind for slide in spec.slides} - self.slide_kinds
+            if unexpected:
+                reasons.append(f"Unexpected slide kinds: {sorted(unexpected)}")
         return PolicyResult(ok=not reasons, reasons=reasons)

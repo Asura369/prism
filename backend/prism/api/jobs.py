@@ -33,15 +33,23 @@ def _new_seed() -> int:
     return random.SystemRandom().randint(0, 2**31 - 1)
 
 
-def _build_job(conn: sqlite3.Connection, body: CreateJobBody, plugin: str, seed: int) -> str:
+def _build_job(
+    conn: sqlite3.Connection,
+    *,
+    plugin: str,
+    topic: str,
+    angle: dict[str, Any] | None,
+    recommended_plugin: str | None,
+    overrides: dict[str, Any],
+    seed: int,
+) -> str:
     job_id = "job_" + uuid.uuid4().hex[:12]
-    overrides = dict(body.overrides)
-    overrides["seed"] = seed
+    overrides = {**overrides, "seed": seed}
     job = Job(
         job_id=job_id,
         plugin=plugin,
-        topic=body.topic.strip(),
-        angle=body.angle,
+        topic=topic.strip(),
+        angle=angle,
         overrides=overrides,
         status=JobStatus.QUEUED,
         stage=None,
@@ -51,7 +59,7 @@ def _build_job(conn: sqlite3.Connection, body: CreateJobBody, plugin: str, seed:
         started_at=None,
         finished_at=None,
     )
-    db.insert_job(conn, job, seed, body.recommended_plugin)
+    db.insert_job(conn, job, seed, recommended_plugin)
     db.append_event(conn, job_id, stage=None, progress=0.0, message="Job queued")
     return job_id
 
@@ -69,7 +77,15 @@ def create_job(body: CreateJobBody, request: Request, conn: sqlite3.Connection =
         )
     seed = body.overrides.get("seed")
     seed = int(seed) if isinstance(seed, (int, str)) and str(seed).isdigit() else _new_seed()
-    job_id = _build_job(conn, body, body.plugin, seed)
+    job_id = _build_job(
+        conn,
+        plugin=body.plugin,
+        topic=body.topic,
+        angle=body.angle,
+        recommended_plugin=body.recommended_plugin,
+        overrides=body.overrides,
+        seed=seed,
+    )
     return {"job_id": job_id}
 
 
@@ -149,23 +165,14 @@ def retry_job(job_id: str, request: Request, body: RetryBody | None = None, conn
     overrides = json.loads(row["overrides"] or "{}")
     if body and body.overrides:
         overrides.update(body.overrides)
-    seed = _new_seed()
-    overrides["seed"] = seed
-    new_id = "job_" + uuid.uuid4().hex[:12]
-    job = Job(
-        job_id=new_id,
+    new_id = _build_job(
+        conn,
         plugin=row["plugin"],
         topic=row["topic"],
         angle=json.loads(row["angle_json"]) if row["angle_json"] else None,
+        recommended_plugin=row["recommended_plugin"],
         overrides=overrides,
-        status=JobStatus.QUEUED,
-        stage=None,
-        progress=0.0,
-        error=None,
-        created_at=db.now_utc(),
-        started_at=None,
-        finished_at=None,
+        seed=_new_seed(),
     )
-    db.insert_job(conn, job, seed, row["recommended_plugin"])
     db.append_event(conn, new_id, stage=None, progress=0.0, message=f"Retry of {job_id}")
     return {"job_id": new_id}

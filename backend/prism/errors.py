@@ -6,19 +6,12 @@ from typing import Any
 class PrismError(Exception):
     error_class = "PrismError"
     retryable = False
+    stage: str | None = None
 
     def __init__(self, message: str, **context: Any):
         super().__init__(message)
         self.message = message
         self.context = context
-
-    @property
-    def stage(self) -> str | None:
-        return getattr(self, "_stage", None)
-
-    @stage.setter
-    def stage(self, value: str | None) -> None:
-        self._stage = value
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -40,13 +33,6 @@ class AdapterUnavailable(PrismError):
     def __init__(self, adapter_name: str, message: str | None = None):
         super().__init__(message or f"Adapter unavailable: {adapter_name}", adapter_name=adapter_name)
         self.adapter_name = adapter_name
-
-
-class RetryExhausted(PrismError):
-    error_class = "RetryExhausted"
-
-    def __init__(self, adapter_name: str, attempts: int):
-        super().__init__(f"{adapter_name} failed after {attempts} attempts", adapter_name=adapter_name, attempts=attempts)
 
 
 class PipelineError(PrismError):

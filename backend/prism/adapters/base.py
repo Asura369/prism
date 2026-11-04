@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, ClassVar, TYPE_CHECKING
 
-from ..domain import Asset, ImageSequenceRecipe, SlideSpec
+from ..domain import Asset, SlideSpec
 
 if TYPE_CHECKING:
     from ..domain import TrendCandidate, TrendScore

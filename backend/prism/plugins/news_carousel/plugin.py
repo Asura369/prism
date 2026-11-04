@@ -47,6 +47,7 @@ class NewsCarouselPlugin(CarouselPluginBase):
     name = "news_carousel"
     version = "0.1.0"
     raw_model = NewsRaw
+    slide_kinds = frozenset({"cover", "news_point", "sources", "cta"})
 
     def sample_payload(self) -> dict[str, Any]:
         return {
@@ -121,10 +122,6 @@ class NewsCarouselPlugin(CarouselPluginBase):
         if len(sources_slides) != 1:
             reasons.append(f"Deck must contain exactly one sources slide, got {len(sources_slides)}")
 
-        unexpected = {slide.kind for slide in spec.slides} - {"cover", "news_point", "sources", "cta"}
-        if unexpected:
-            reasons.append(f"Unexpected slide kinds: {sorted(unexpected)}")
-
         for slide in spec.slides:
             index = slide.meta.get("source_index")
             if index is not None and not (isinstance(index, int) and 0 <= index < len(spec.sources)):
@@ -143,12 +140,5 @@ class NewsCarouselPlugin(CarouselPluginBase):
 
         if any(slide.body and len(slide.body) > BODY_MAX for slide in sources_slides):
             reasons.append(f"Sources slide body exceeds {BODY_MAX} characters")
-
-        min_slides = policy.get("min_slides", 6)
-        max_slides = policy.get("max_slides", 10)
-        if len(spec.slides) < min_slides:
-            reasons.append(f"Expected at least {min_slides} slides, got {len(spec.slides)}")
-        if len(spec.slides) > max_slides:
-            reasons.append(f"Expected at most {max_slides} slides, got {len(spec.slides)}")
 
         return PolicyResult(ok=not reasons, reasons=reasons, warnings=result.warnings)

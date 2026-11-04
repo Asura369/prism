@@ -37,16 +37,3 @@ def settings(request: Request):
         "fake_adapters": secrets.fake_adapters,
     }
 
-
-@router.post("/settings/selftest")
-def selftest(request: Request):
-    resolver = request.app.state.resolver
-    result = {}
-    for interface in ("llm", "cards", "export"):
-        chain = resolver.resolve(interface)
-        result[interface] = {
-            "available": bool(chain),
-            "selected": getattr(chain[0], "name", None) if chain else None,
-            "adapters": resolver.availability().get(interface, []),
-        }
-    return result

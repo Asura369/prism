@@ -3,10 +3,6 @@ from __future__ import annotations
 from PIL import Image, ImageColor, ImageDraw
 
 
-def solid_background(width: int, height: int, color: str) -> Image.Image:
-    return Image.new("RGB", (width, height), ImageColor.getrgb(color))
-
-
 def subtle_gradient(width: int, height: int, top_color: str, bottom_color: str) -> Image.Image:
     """Vertical gradient, one row at a time. No numpy, deterministic."""
     top = ImageColor.getrgb(top_color)

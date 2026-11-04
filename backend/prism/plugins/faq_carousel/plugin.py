@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ...domain import ContentSpec, PolicyResult, SlideSpec
+from ...domain import ContentSpec, SlideSpec
 from ..base import CarouselPluginBase
 
 
@@ -24,6 +24,7 @@ class FaqCarouselPlugin(CarouselPluginBase):
     name = "faq_carousel"
     version = "0.1.0"
     raw_model = FaqRaw
+    slide_kinds = frozenset({"cover", "qa", "cta"})
 
     def sample_payload(self) -> dict[str, Any]:
         return {
@@ -52,16 +53,3 @@ class FaqCarouselPlugin(CarouselPluginBase):
             )
         slides.append(SlideSpec(kind="cta", heading=raw["cta"], body=None))
         return slides
-
-    def policy_check(self, spec: ContentSpec, assets: list, sources: list[dict]) -> PolicyResult:
-        result = super().policy_check(spec, assets, sources)
-        policy = self.policy_config
-        reasons = list(result.reasons)
-        if len(spec.slides) < policy.get("min_slides", 5):
-            reasons.append(f"Expected at least {policy.get('min_slides', 5)} slides, got {len(spec.slides)}")
-        if len(spec.slides) > policy.get("max_slides", 10):
-            reasons.append(f"Expected at most {policy.get('max_slides', 10)} slides, got {len(spec.slides)}")
-        bad = {s.kind for s in spec.slides} - {"cover", "qa", "cta"}
-        if bad:
-            reasons.append(f"Unexpected slide kinds: {sorted(bad)}")
-        return PolicyResult(ok=not reasons, reasons=reasons, warnings=result.warnings)

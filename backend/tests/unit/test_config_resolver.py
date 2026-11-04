@@ -8,7 +8,7 @@ from prism.config import Config, Secrets, load_config
 
 def test_defaults_are_sane():
     cfg = Config()
-    assert cfg.validation.min_slide_count == 5
+    assert cfg.validation.min_file_size_mb == 0.05
     assert cfg.discovery.scoring.hard_filter.safety_min == 0.40
     assert cfg.adapters.llm.default == "openai_compat"
     assert cfg.adapters.llm.openai_compat.base_url.startswith("https://")
@@ -38,10 +38,10 @@ def test_resolver_no_key_falls_through_to_fake(cfg: Config):
     resolver = AdapterResolver(cfg, secrets)
     chain = resolver.resolve("llm")
     assert [a.name for a in chain] == ["fake"]
-    chosen, used_fallback = resolver.use("llm")
-    assert chosen.name == "fake"
-    assert used_fallback is True
-    assert "llm:fake" in resolver.fallbacks_used
+    completion = resolver.complete("hello")
+    assert completion.adapter == "fake"
+    assert completion.text
+    assert completion.failures == []
 
 
 def test_resolver_fake_adapters_flag_forces_fake(cfg: Config):

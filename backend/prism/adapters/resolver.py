@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import time
+from dataclasses import dataclass
 from typing import Any
 
 from ..config import Config, Secrets, get_secrets
 from ..errors import AdapterUnavailable
-from .base import BaseAdapter, CardRendererAdapter, ImageSequenceExportAdapter, LLMAdapter
+from .base import BaseAdapter, CardRendererAdapter
 from .cards.templated import TemplatedCardRenderer
 from .assembly.zip import ZipExportAdapter
 from .llm.fake import FakeLLM
@@ -15,13 +17,20 @@ from .news.google_news import GoogleNewsRSSNews
 INTERFACES = ("llm", "cards", "export", "news")
 
 
+@dataclass
+class Completion:
+    text: str
+    adapter: str
+    model: str
+    failures: list[dict[str, Any]]
+
+
 class AdapterResolver:
     """Resolves config adapter names to available instances, honoring fallback chains."""
 
     def __init__(self, cfg: Config, secrets: Secrets | None = None):
         self.cfg = cfg
         self.secrets = secrets or get_secrets()
-        self.fallbacks_used: list[str] = []
         self._registry: dict[str, dict[str, BaseAdapter]] = {
             "llm": {
                 "openai_compat": OpenAIAdapter(cfg.adapters.llm.openai_compat, self.secrets),
@@ -43,14 +52,12 @@ class AdapterResolver:
             self._registry["news"] = {"fake": self._registry["news"]["fake"]}
 
     def chain_names(self, interface: str) -> list[str]:
-        if interface == "llm" and self.secrets.fake_adapters:
-            return ["fake"]
-        if interface == "news" and self.secrets.fake_adapters:
+        if interface in ("llm", "news") and self.secrets.fake_adapters:
             return ["fake"]
         if interface == "llm":
             return [self.cfg.adapters.llm.default, *self.cfg.adapters.llm.fallback]
         if interface == "cards":
-            return [self.cfg.adapters.cards.default, *self.cfg.adapters.cards.fallback]
+            return [self.cfg.adapters.cards.default]
         if interface == "export":
             return [self.cfg.adapters.export.default]
         if interface == "news":
@@ -77,17 +84,25 @@ class AdapterResolver:
     def get(self, interface: str) -> BaseAdapter:
         return self.require(interface)[0]
 
-    def use(self, interface: str) -> tuple[BaseAdapter, bool]:
-        """Return the primary adapter plus whether a fallback was used."""
-        chain = self.require(interface)
-        chosen = chain[0]
-        default_name = self.chain_names(interface)[0]
-        used_fallback = getattr(chosen, "name", None) != default_name
-        if used_fallback:
-            label = f"{interface}:{chosen.name}"
-            if label not in self.fallbacks_used:
-                self.fallbacks_used.append(label)
-        return chosen, used_fallback
+    def complete(self, prompt: str, *, json_schema: dict[str, Any] | None = None) -> Completion:
+        """Call the first adapter in the LLM chain that answers, retrying transient failures."""
+        failures: list[dict[str, Any]] = []
+        last_error: Exception | None = None
+        for adapter in self.require("llm"):
+            for attempt in range(1, self.cfg.run.max_retries + 1):
+                try:
+                    text = adapter.complete(prompt, json_schema=json_schema)  # type: ignore[union-attr]
+                    name = getattr(adapter, "name", "unknown")
+                    return Completion(text, name, str(getattr(adapter, "model", name)), failures)
+                except Exception as exc:  # noqa: BLE001 - adapter boundary
+                    last_error = exc
+                    failures.append(
+                        {"adapter": getattr(adapter, "name", "?"), "attempt": attempt, "error": str(exc)}
+                    )
+                    if attempt < self.cfg.run.max_retries:
+                        backoff = self.cfg.run.retry_backoff_s
+                        time.sleep(backoff[min(attempt - 1, len(backoff) - 1)])
+        raise last_error or RuntimeError("No LLM adapter produced output")
 
     def availability(self) -> dict[str, list[dict[str, Any]]]:
         out: dict[str, list[dict[str, Any]]] = {}
@@ -97,13 +112,6 @@ class AdapterResolver:
                 for name, adapter in self.registered(interface).items()
             ]
         return out
-
-    def llm_model(self) -> str | None:
-        chain = self.resolve("llm")
-        if not chain:
-            return None
-        model = getattr(chain[0], "model", None)
-        return str(model) if model else chain[0].name
 
     def style_names(self) -> list[str]:
         cards = self.registered("cards").get(self.cfg.adapters.cards.default)

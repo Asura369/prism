@@ -180,10 +180,6 @@ def update_job_status(conn: sqlite3.Connection, job_id: str, status: JobStatus, 
     update_job(conn, job_id, status=status.value, **extra)
 
 
-def set_job_error(conn: sqlite3.Connection, job_id: str, error: dict[str, Any]) -> None:
-    update_job(conn, job_id, error_json=json.dumps(error))
-
-
 def append_event(
     conn: sqlite3.Connection,
     job_id: str,

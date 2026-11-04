@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import asdict
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
@@ -10,12 +11,8 @@ from pydantic import BaseModel, Field
 from ..errors import AngleGenerationError, InvalidTrendsCSV
 from ..plugins.registry import PluginRegistry
 from .common import api_error, get_conn
-from ..discovery.angles import (
-    default_plugin_for,
-    generate_angles,
-    store_generated_angles,
-)
-from ..discovery.cache import load_angles, load_scored, scored_to_dict
+from ..discovery.angles import default_plugin_for, generate_angles
+from ..discovery.cache import load_angles, load_scored, scored_to_dict, store_angles
 from ..discovery.service import fetch_trends, score_and_store
 from ..discovery.sources.csv_upload import parse_trends_csv
 from ..discovery.sources.manual import create_manual_candidate
@@ -110,7 +107,17 @@ def angles(body: AnglesBody, request: Request, conn: sqlite3.Connection = Depend
         generated = generate_angles(request.app.state.cfg, request.app.state.resolver, request.app.state.registry, item)
     except AngleGenerationError as exc:
         raise api_error(502, "angle_generation_failed", exc.message) from exc
-    store_generated_angles(request.app.state.cfg, conn, item, generated)
+    store_angles(
+        conn,
+        item.candidate.id,
+        {
+            "candidate_id": item.candidate.id,
+            "title": item.candidate.title,
+            "angles": [asdict(angle) for angle in generated],
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        },
+        request.app.state.cfg,
+    )
     return {"angles": [asdict(angle) for angle in generated], "candidate": scored_to_dict(item)}
 
 

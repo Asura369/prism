@@ -6,7 +6,6 @@ import logging
 import os
 import shutil
 import sqlite3
-import time
 from pathlib import Path
 from typing import Any
 
@@ -135,33 +134,18 @@ class Orchestrator:
 
     # ---- LLM helper --------------------------------------------------------------
     def _llm(self, prompt: str, *, json_schema: dict[str, Any] | None, purpose: str) -> str:
-        chain = self.resolver.require("llm")
         self.manifest["prompt_hashes"][purpose] = sha256_text(prompt)
-        last_error: Exception | None = None
-        for adapter in chain:
-            for attempt in range(1, self.cfg.run.max_retries + 1):
-                try:
-                    output = adapter.complete(prompt, json_schema=json_schema)
-                    adapter_name = getattr(adapter, "name", "unknown")
-                    if self.llm_adapter_name is None:
-                        self.llm_adapter_name = adapter_name
-                        self.llm_model = str(getattr(adapter, "model", adapter_name))
-                    default_name = self.cfg.adapters.llm.default
-                    if adapter_name != default_name:
-                        label = f"llm:{adapter_name}"
-                        if label not in self.manifest["fallbacks_used"]:
-                            self.manifest["fallbacks_used"].append(label)
-                        self.manifest["degraded"] = True
-                    return output
-                except Exception as exc:  # noqa: BLE001 - adapter boundary
-                    last_error = exc
-                    self.retries.append(
-                        {"purpose": purpose, "adapter": getattr(adapter, "name", "?"), "attempt": attempt, "error": str(exc)}
-                    )
-                    if attempt < self.cfg.run.max_retries:
-                        backoff = self.cfg.run.retry_backoff_s
-                        time.sleep(backoff[min(attempt - 1, len(backoff) - 1)])
-        raise last_error or RuntimeError(f"No LLM adapter produced output for {purpose}")
+        result = self.resolver.complete(prompt, json_schema=json_schema)
+        self.retries.extend({**failure, "purpose": purpose} for failure in result.failures)
+        if self.llm_adapter_name is None:
+            self.llm_adapter_name = result.adapter
+            self.llm_model = result.model
+        if result.adapter != self.cfg.adapters.llm.default:
+            label = f"llm:{result.adapter}"
+            if label not in self.manifest["fallbacks_used"]:
+                self.manifest["fallbacks_used"].append(label)
+            self.manifest["degraded"] = True
+        return result.text
 
     # ---- stages ------------------------------------------------------------------
     def _do_spec(self) -> None:
@@ -334,7 +318,6 @@ class Orchestrator:
             "name": self.llm_adapter_name or "fake",
             "model": self.llm_model or "fake",
         }
-        self.manifest["sources"] = self.spec.sources
 
         metadata = self._metadata_json()
         metadata_path.write_text(json.dumps(metadata, indent=2))
@@ -385,15 +368,11 @@ class Orchestrator:
         }
         try:
             for index, stage in enumerate(self.stages):
-                for entry in self.manifest["stages"]:
-                    if entry["name"] == stage:
-                        entry["status"] = "running"
+                entry = self.manifest["stages"][index]
+                entry["status"] = "running"
                 artifact = self._stage(stage, handlers[stage])
-                for entry in self.manifest["stages"]:
-                    if entry["name"] == stage:
-                        entry["status"] = "completed"
-                        entry["progress"] = 1.0
-                self.manifest["stages"][index] = next(e for e in self.manifest["stages"] if e["name"] == stage)
+                entry["status"] = "completed"
+                entry["progress"] = 1.0
             self.manifest["status"] = "REVIEW_READY"
             return artifact
         except JobCancelled:
