@@ -1,3 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream-50: #FBF8F2;
+  --color-cream-100: #FAF6EE;
+  --color-cream-200: #F1EADF;
+  --color-cream-300: #E3D8C8;
+  --color-ink-900: #1E1B18;
+  --color-ink-700: #3D3833;
+  --color-ink-500: #6B655E;
+  --color-ink-400: #8A8580;
+  --color-ember-400: #E08A6C;
+  --color-ember-500: #D97757;
+  --color-ember-600: #C4623F;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 18px;
+  --shadow-card: 0 1px 2px rgba(30, 27, 24, 0.04), 0 12px 32px -20px rgba(30, 27, 24, 0.25);
+}
+
 @font-face {
   font-family: "Inter";
   src: url("/fonts/Inter-Regular.ttf") format("truetype");
@@ -12,10 +32,6 @@
   font-style: normal;
   font-display: swap;
 }
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 @layer base {
   html {
