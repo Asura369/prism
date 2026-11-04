@@ -36,7 +36,6 @@ discovery:
   sources:
     google_news_rss:   { enabled: true }
     hackernews:        { enabled: true }
-    reddit:            { enabled: false, subs: [] }  # deferred: public JSON returns 403; RSS fallback or OAuth later
     google_trends_csv: { enabled: true }
     manual:            { enabled: true }
   clustering:
@@ -59,7 +58,6 @@ discovery:
     source_reliability:
       google_news_rss: 1.0
       hackernews: 0.9
-      reddit: 0.8
       google_trends_csv: 1.0
       manual: 0.7
   angles:

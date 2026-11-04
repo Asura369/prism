@@ -67,13 +67,11 @@ class AssetsConfig(_Model):
 
 class SourceConfig(_Model):
     enabled: bool = True
-    subs: list[str] = Field(default_factory=list)
 
 
 class DiscoverySourcesConfig(_Model):
     google_news_rss: SourceConfig = Field(default_factory=SourceConfig)
     hackernews: SourceConfig = Field(default_factory=SourceConfig)
-    reddit: SourceConfig = Field(default_factory=lambda: SourceConfig(subs=["todayilearned", "interestingasfuck", "Damnthatsinteresting"]))
     google_trends_csv: SourceConfig = Field(default_factory=SourceConfig)
     manual: SourceConfig = Field(default_factory=SourceConfig)
 
@@ -102,7 +100,6 @@ class ScoringConfig(_Model):
         default_factory=lambda: {
             "google_news_rss": 1.0,
             "hackernews": 0.9,
-            "reddit": 0.8,
             "google_trends_csv": 1.0,
             "manual": 0.7,
         }

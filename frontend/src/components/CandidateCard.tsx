@@ -8,7 +8,6 @@ const SOURCE_LABELS: Record<string, string> = {
   hackernews: "Hacker News",
   google_trends_csv: "Trends CSV",
   manual: "Manual",
-  reddit: "Reddit",
 };
 
 function scoreVariant(score: number) {

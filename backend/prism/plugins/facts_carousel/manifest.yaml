@@ -20,7 +20,7 @@ assets:
   - { kind: slide,  adapter: cards }
 
 discovery:
-  preferred_sources: [reddit, google_news_rss, hackernews, google_trends_csv, manual]
+  preferred_sources: [google_news_rss, hackernews, google_trends_csv, manual]
   freshness_window_h: null
 
 policy:

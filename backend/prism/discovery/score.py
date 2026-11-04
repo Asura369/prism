@@ -43,8 +43,6 @@ def _engagement(candidate: TrendCandidate) -> float:
     metrics = candidate.metrics
     if candidate.source == "hackernews":
         return _clamp(max(float(metrics.get("points", 0)) / 500, float(metrics.get("descendants", 0)) / 200))
-    if candidate.source == "reddit":
-        return _clamp(max(float(metrics.get("upvotes", 0)) / 1000, float(metrics.get("comment_velocity", 0)) / 20))
     if candidate.source == "google_trends_csv":
         return _clamp(float(metrics.get("score", 0.5)))
     if candidate.source == "manual":

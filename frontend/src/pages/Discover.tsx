@@ -188,7 +188,7 @@ export default function Discover() {
             ) : (
               <SourceToggleGroup sources={availableSources} selected={activeSources} onChange={setSelected} />
             )}
-            <p className="mt-2 text-[11px] text-ink-400">Reddit is deferred; CSV upload and manual ideas stay available.</p>
+            <p className="mt-2 text-[11px] text-ink-400">CSV upload and manual ideas stay available.</p>
           </div>
         </CardContent>
       </Card>

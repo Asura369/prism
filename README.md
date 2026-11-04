@@ -62,7 +62,7 @@ React + Vite → FastAPI (:8000) → SQLite (WAL) ← worker process → plugin 
 | LLM | `openai_compat` (any OpenAI-compatible provider) | `fake` |
 | Card renderer | `templated` (Pillow + Inter) | — |
 | Export | `zip` | — |
-| Trend sources | Google News RSS, Hacker News, Reddit, Trends CSV, manual | soft-fail per source |
+| Trend sources | Google News RSS, Hacker News, Trends CSV, manual | soft-fail per source |
 | News sources | `google_news_rss` | `fake` when `FAKE_ADAPTERS=1` |
 
 The LLM adapter takes any OpenAI-compatible `base_url` + `model`; `LLM_KEY` is the
