@@ -37,7 +37,7 @@ export function AngleCard({
           <Badge variant="outline">{angle.est_slide_count} slides</Badge>
         </div>
 
-        <p className="text-sm leading-relaxed text-ink-600">
+        <p className="text-sm leading-relaxed text-ink-500">
           <span className="font-semibold text-ink-900">Why it works: </span>
           {angle.why_it_works}
         </p>

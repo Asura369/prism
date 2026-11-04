@@ -8,7 +8,7 @@ every deck in a human review queue before anything leaves the machine.
 ## Prerequisites
 
 - Python 3.11+
-- Node 20.19+ (Vite 8)
+- Node 20.19+ or 22.12+ (Vite 8)
 
 No Docker, no ffmpeg, no audio/video tooling.
 
