@@ -117,6 +117,38 @@ CI uses `FAKE_ADAPTERS=1` and requires no API keys.
 In: discovery, angles, three carousel plugins, review queue, provenance.
 Out: auth, cloud deploy, Docker, auto-publishing, video, audio, rich media.
 
+## Fonts and licensing
+
+Every font in this repository is **Inter v4.001**, copyright 2016 The Inter
+Project Authors, licensed under the **SIL Open Font License 1.1**. The license
+text ships beside the files and is also embedded in each font's own name table
+(ID 13), so it travels with the binary.
+
+| File | Used by | Purpose |
+|---|---|---|
+| `assets/fonts/Inter-Regular.ttf`, `Inter-Bold.ttf` | Pillow renderer | the decks themselves |
+| `frontend/public/fonts/InterVariable.woff2` | the web console | variable weight 100–900 |
+
+Commercial use is covered. OFL 1.1 permits commercial use, embedding, and
+bundling, and states that *"the requirement for fonts to remain under this
+license does not apply to any document created using the fonts"* — so decks
+rendered with Inter and posted commercially carry no font obligation. The
+restriction is on selling the font software itself, which this project does not
+do. Deck text is rasterized into PNGs; no font data is embedded in the output.
+
+Verified for this tree (v4.001, `git-9221beed3`):
+
+```
+288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f  Inter-Bold.ttf
+40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82  Inter-Regular.ttf
+693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3  InterVariable.woff2
+```
+
+If a font is ever added, it must be OFL-1.1, CC0, or Apache-2.0 licensed, with
+its license file committed beside it and its hash recorded here. The renderer
+fails with `ConfigError` on a missing font rather than falling back to Pillow's
+unlicensed bitmap default; keep it that way.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
