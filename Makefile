@@ -3,9 +3,7 @@ VENV := .venv
 PY := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 UVICORN := $(VENV)/bin/uvicorn
-export FAKE_ADAPTERS ?= 0
-
-.PHONY: setup dev web worker frontend install test test-backend test-frontend demo build clean
+.PHONY: setup dev stop restart web worker frontend install test test-backend test-frontend demo build clean
 
 setup:
 	@test -f assets/fonts/Inter-Regular.ttf && test -f assets/fonts/Inter-Bold.ttf || \
@@ -17,10 +15,22 @@ setup:
 	$(PIP) install --upgrade pip
 	$(PIP) install -e 'backend[dev]'
 	@if [ -f frontend/package.json ]; then cd frontend && npm install; else echo "frontend/package.json not present yet — skipped npm install"; fi
-	@echo "Setup complete. Copy .env.example to .env if you want a real LLM."
+	@echo "Setup complete. Configure a provider in Settings (make dev) to use a real LLM."
 
 dev:
 	./scripts/dev.sh
+
+# Bracketed patterns so pkill can't match the shell running it.
+stop:
+	@pkill -f 'uvicorn prism[.]main:app' || true
+	@pkill -f 'prism[.]worker' || true
+	@pkill -f 'node_modules/[.]bin/vite' || true
+	@sleep 1
+	@pgrep -fl 'prism[.]main:app|prism[.]worker|node_modules/[.]bin/vite' \
+		|| echo "web, worker, frontend stopped"
+
+restart: stop
+	$(MAKE) dev
 
 web:
 	cd backend && ../$(UVICORN) prism.main:app --reload --port 8000
@@ -34,13 +44,13 @@ frontend:
 test: test-backend test-frontend
 
 test-backend:
-	cd backend && FAKE_ADAPTERS=1 ../$(VENV)/bin/pytest -x
+	cd backend && ../$(VENV)/bin/pytest -x
 
 test-frontend:
 	@if [ -d frontend/node_modules ]; then cd frontend && npm run typecheck && npm run test; else echo "frontend deps not installed — skipped"; fi
 
 demo:
-	cd backend && FAKE_ADAPTERS=1 ../$(PY) -m prism.demo
+	cd backend && ../$(PY) -m prism.demo
 
 build:
 	cd frontend && npm run build
