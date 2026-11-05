@@ -47,4 +47,4 @@ build:
 	cd backend && ../$(PIP) wheel . -w dist --no-deps
 
 clean:
-	rm -rf work/* review/* data/*.db
+	rm -rf work/* review/* data/*.db* frontend/dist

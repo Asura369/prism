@@ -39,13 +39,29 @@ metadata and approve or reject it.
 </p>
 
 One generated `news_carousel` deck (1080×1350 each), from `make demo`: a cover,
-a sourced news point, and the attribution slide. Regenerate them any time with
-`make demo` and look in `review/<job_id>/slides/`.
+a sourced news point, and the attribution slide. These are deterministic FakeLLM
+renders, so the sources slide reads `example.news` rather than live links.
+Regenerate them any time with `make demo` and look in `review/<job_id>/slides/`.
 
 ## Architecture
 
 React + Vite → FastAPI (:8000) → SQLite (WAL) ← worker process → plugin pipeline
 → Pillow renderer → zip. Three local processes, no containers.
+
+## Repository layout
+
+| Path | What lives there |
+|---|---|
+| `backend/prism/` | FastAPI app, worker, orchestrator, adapters, plugin registry, renderer |
+| `backend/tests/` | unit, API, and full-pipeline tests |
+| `frontend/src/` | React console: pages, components, API client, types |
+| `assets/` | Inter fonts and renderer style presets |
+| `config.yaml` | adapter chains, discovery weights, validation and policy knobs |
+| `docs/screenshots/` | the deck renders above |
+| `scripts/dev.sh` | boots the API, worker, and Vite together |
+
+Runtime output is gitignored: `data/` (SQLite), `review/` (decks and metadata),
+`work/` (in-flight render files).
 
 ## Plugins
 
@@ -81,7 +97,7 @@ job fails silently.
 
 | Symptom | Error / response | What you see, what to do |
 |---|---|---|
-| `LLM_KEY` missing, or the provider is down | `fake` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Amber "degraded" badge on Review; set `LLM_KEY` for real output. |
+| `LLM_KEY` missing, or the provider is down | `fake` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Red "Degraded" note on the Review provenance panel; set `LLM_KEY` for real output. |
 | Candidate fails the safety filter | `unsafe_candidate` (HTTP 400) on manual entry; auto-discovered candidates are dropped | Nothing is queued; rephrase the topic or title. |
 | Spec breaks the plugin schema | one re-prompt, then `SpecValidationError` | Job FAILED at `spec`; retry the job. |
 | News run finds fewer articles than `min_sources` | `InsufficientSourcesError(found, required)` | Job FAILED at `ingest`; a failing adapter is recorded in `manifest.ingest_errors` — widen the topic or adjust `min_sources`. |
@@ -107,10 +123,13 @@ then sit in the review queue.
 ## Testing
 
 ```bash
-make test
+make test          # pytest + tsc + vitest
+make test-backend  # pytest only
+make test-frontend # typecheck + vitest only
 ```
 
-CI uses `FAKE_ADAPTERS=1` and requires no API keys.
+Both suites run with `FAKE_ADAPTERS=1` and need no API keys or network. There is
+no CI configuration; run `make test` locally before committing.
 
 ## Scope and non-goals
 
