@@ -7,19 +7,6 @@ run:
   worker_heartbeat_stale_s: 15
 
 adapters:
-  llm:
-    # Any OpenAI-compatible provider: set base_url + model for yours.
-    # Examples: DeepSeek https://api.deepseek.com / deepseek-flash
-    #           OpenAI   https://api.openai.com/v1 / gpt-4o-mini
-    #           local    http://localhost:11434/v1 / llama3.1
-    # API key comes from LLM_KEY.
-    default: openai_compat
-    openai_compat:
-      base_url: https://api.deepseek.com
-      model: deepseek-flash
-      timeout_s: 60
-      extra_body: { thinking: { type: disabled } }  # provider-specific passthrough; DeepSeek runs non-thinking
-    fallback: [fake]
   cards:
     default: templated
   export:

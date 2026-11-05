@@ -140,7 +140,7 @@ class Orchestrator:
         if self.llm_adapter_name is None:
             self.llm_adapter_name = result.adapter
             self.llm_model = result.model
-        if result.adapter != self.cfg.adapters.llm.default:
+        if result.adapter != self.resolver.llm_name:
             label = f"llm:{result.adapter}"
             if label not in self.manifest["fallbacks_used"]:
                 self.manifest["fallbacks_used"].append(label)

@@ -165,7 +165,7 @@ def test_trends_cache_avoids_second_network_call(cfg: Config, monkeypatch):
             return [_candidate("gn:1", "Cached topic", "google_news_rss", 1.0)]
 
     monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": FakeSource()})
-    secrets = Secrets(fake_adapters=True, _env_file=None)
+    secrets = Secrets(fake_adapters=True)
     from prism.adapters.resolver import AdapterResolver
 
     resolver = AdapterResolver(cfg, secrets)
@@ -187,7 +187,7 @@ def test_source_failure_is_isolated(cfg: Config, monkeypatch):
             raise RuntimeError("network down")
 
     monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": BrokenSource()})
-    secrets = Secrets(fake_adapters=True, _env_file=None)
+    secrets = Secrets(fake_adapters=True)
     from prism.adapters.resolver import AdapterResolver
 
     result = service.fetch_trends(cfg, conn, AdapterResolver(cfg, secrets), region="US", window_h=24)

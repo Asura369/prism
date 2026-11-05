@@ -24,7 +24,7 @@ class Worker:
         self.db_path = resolve_path(self.cfg.run.db_path, self.cfg.base_dir)
         db.init_db(self.db_path)
         self.conn = db.connect(self.db_path)
-        self.resolver = AdapterResolver(self.cfg)
+        self.resolver = AdapterResolver(self.cfg, db_path=str(self.db_path))
         self.registry = PluginRegistry(self.cfg, self.resolver)
         self.stop = threading.Event()
         self.current_job_id: str | None = None
@@ -78,6 +78,7 @@ class Worker:
         if job is None:
             return
         self.current_job_id = job.job_id
+        self.resolver.refresh_llm()  # pick up provider changes made in the UI
         recommended = row["recommended_plugin"]
         try:
             orchestrator = Orchestrator(

@@ -17,25 +17,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.fixture
 def cfg(tmp_path: Path) -> Config:
-    cfg = load_config(env_file=False)
+    cfg = load_config()
     cfg.base_dir = REPO_ROOT
     cfg.run.work_dir = str(tmp_path / "work")
     cfg.run.output_dir = str(tmp_path / "review")
     cfg.run.db_path = str(tmp_path / "prism.db")
-    cfg.adapters.llm.default = "fake"
-    cfg.adapters.llm.fallback = []
     return cfg
 
 
 @pytest.fixture
 def secrets() -> Secrets:
-    return Secrets(
-        llm_key="",
-        fake_adapters=False,
-        prism_config="",
-        prism_db_path="",
-        _env_file=None,
-    )
+    return Secrets(fake_adapters=False)
 
 
 @pytest.fixture

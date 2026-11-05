@@ -5,6 +5,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Request
 
 from .. import db
+from ..providers.config import effective_llm
 from .common import get_conn
 
 router = APIRouter(tags=["health"])
@@ -26,11 +27,15 @@ def settings(request: Request):
     cfg = request.app.state.cfg
     resolver = request.app.state.resolver
     secrets = request.app.state.secrets
+    effective = effective_llm(request.app.state.db_path)
     data = cfg.model_dump(mode="json", exclude={"base_dir"})
     return {
         "config": data,
-        "keys": {
-            "LLM_KEY": "SET" if secrets.llm_key else "UNSET",
+        "llm": {
+            "provider": effective.provider if effective else None,
+            "model": effective.config.model if effective else None,
+            "base_url": effective.config.base_url if effective else None,
+            "key_set": effective is not None,
         },
         "adapters": resolver.availability(),
         "styles": resolver.style_names(),

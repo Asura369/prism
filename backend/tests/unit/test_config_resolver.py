@@ -10,32 +10,22 @@ def test_defaults_are_sane():
     cfg = Config()
     assert cfg.validation.min_file_size_mb == 0.05
     assert cfg.discovery.scoring.hard_filter.safety_min == 0.40
-    assert cfg.adapters.llm.default == "openai_compat"
-    assert cfg.adapters.llm.openai_compat.base_url.startswith("https://")
-    assert cfg.adapters.llm.openai_compat.extra_body == {}
-    assert cfg.adapters.llm.fallback == ["fake"]
 
 
-def test_env_db_path_overrides_config(monkeypatch, tmp_path: Path):
-    monkeypatch.setenv("PRISM_DB_PATH", str(tmp_path / "env.db"))
-    cfg = load_config(env_file=False)
-    assert cfg.run.db_path == str(tmp_path / "env.db")
-
-
-def test_explicit_config_path_sets_base_dir(monkeypatch, tmp_path: Path):
-    monkeypatch.delenv("PRISM_DB_PATH", raising=False)
+def test_explicit_config_path_sets_base_dir(tmp_path: Path):
     path = tmp_path / "config.yaml"
     path.write_text("run:\n  db_path: ./custom.db\n")
-    cfg = load_config(path, env_file=False)
+    cfg = load_config(path)
     assert cfg.run.db_path == "./custom.db"
     assert cfg.base_dir == tmp_path
 
 
-def test_resolver_no_key_falls_through_to_fake(cfg: Config):
-    cfg.adapters.llm.default = "openai_compat"
-    cfg.adapters.llm.fallback = ["fake"]
-    secrets = Secrets(llm_key="", fake_adapters=False, prism_config="", prism_db_path="", _env_file=None)
-    resolver = AdapterResolver(cfg, secrets)
+def test_resolver_without_a_configured_provider_uses_fake(cfg: Config):
+    from prism import db
+
+    db.init_db(cfg.run.db_path)
+    secrets = Secrets()
+    resolver = AdapterResolver(cfg, secrets, db_path=cfg.run.db_path)
     chain = resolver.resolve("llm")
     assert [a.name for a in chain] == ["fake"]
     completion = resolver.complete("hello")
@@ -45,33 +35,26 @@ def test_resolver_no_key_falls_through_to_fake(cfg: Config):
 
 
 def test_resolver_fake_adapters_flag_forces_fake(cfg: Config):
-    cfg.adapters.llm.default = "openai_compat"
-    secrets = Secrets(llm_key="sk-test", fake_adapters=True, prism_config="", prism_db_path="", _env_file=None)
-    resolver = AdapterResolver(cfg, secrets)
+    from prism import db
+
+    db.init_db(cfg.run.db_path)
+    secrets = Secrets(fake_adapters=True)
+    resolver = AdapterResolver(cfg, secrets, db_path=cfg.run.db_path)
     assert [a.name for a in resolver.resolve("llm")] == ["fake"]
 
 
-def test_resolver_uses_llm_key(cfg: Config):
-    cfg.adapters.llm.default = "openai_compat"
-    cfg.adapters.llm.fallback = ["fake"]
-    secrets = Secrets(
-        llm_key="sk-test",
-        fake_adapters=False,
-        prism_config="",
-        prism_db_path="",
-        _env_file=None,
-    )
-    resolver = AdapterResolver(cfg, secrets)
-    assert [a.name for a in resolver.resolve("llm")] == ["openai_compat", "fake"]
-    assert resolver.get("llm").model == cfg.adapters.llm.openai_compat.model
+def test_resolver_uses_the_provider_stored_in_the_db(cfg: Config):
+    from prism import db
+    from prism.providers.config import ACTIVE_KEY, secret_name
 
+    db.init_db(cfg.run.db_path)
+    conn = db.connect(cfg.run.db_path)
+    db.set_secret(conn, secret_name("deepseek"), "sk-db")
+    db.set_setting(conn, ACTIVE_KEY, "deepseek")
+    conn.close()
 
-def test_dotenv_can_supply_config_path_and_db_path(monkeypatch, tmp_path: Path):
-    monkeypatch.delenv("PRISM_DB_PATH", raising=False)
-    monkeypatch.delenv("PRISM_CONFIG", raising=False)
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "config.yaml").write_text("run:\n  db_path: ./from-config.db\n")
-    (tmp_path / ".env").write_text("PRISM_CONFIG=./config.yaml\nPRISM_DB_PATH=./from-env.db\n")
-    cfg = load_config()
-    assert cfg.run.db_path == "./from-env.db"
-    assert cfg.base_dir == tmp_path
+    secrets = Secrets()
+    resolver = AdapterResolver(cfg, secrets, db_path=cfg.run.db_path)
+    assert [a.name for a in resolver.resolve("llm")] == ["deepseek", "fake"]
+    assert resolver.get("llm").model == "deepseek-flash"
+    assert resolver.llm_name == "deepseek"

@@ -12,13 +12,7 @@ from prism.main import create_app
 
 
 def _client(cfg: Config) -> TestClient:
-    secrets = Secrets(
-        llm_key="",
-        fake_adapters=True,
-        prism_config="",
-        prism_db_path="",
-        _env_file=None,
-    )
+    secrets = Secrets(fake_adapters=True)
     return TestClient(create_app(cfg, secrets))
 
 
@@ -100,8 +94,10 @@ def test_stale_running_job_marked_worker_lost(cfg: Config):
         assert detail["job"]["error"]["error_class"] == "WorkerLost"
 
 
-def test_settings_exposes_deepseek_key_only(cfg: Config):
+def test_settings_never_exposes_a_key(cfg: Config):
     with _client(cfg) as client:
         body = client.get("/api/settings").json()
-        assert set(body["keys"]) == {"LLM_KEY"}
+        assert "keys" not in body
+        assert body["llm"]["provider"] is None
+        assert body["llm"]["key_set"] is False
         assert [item["name"] for item in body["adapters"]["llm"]] == ["fake"]

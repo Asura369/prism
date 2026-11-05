@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from prism.adapters.llm.openai import OpenAIAdapter
-from prism.config import OpenAICompatConfig, Secrets
+from prism.config import OpenAICompatConfig
 
 
 class _FakeCompletions:
@@ -38,13 +38,12 @@ def _adapter(
     finish_reason: str = "stop",
     extra_body: dict | None = None,
 ) -> tuple[OpenAIAdapter, _FakeClient]:
-    secrets = Secrets(llm_key="sk-test", fake_adapters=False, prism_config="", prism_db_path="", _env_file=None)
     cfg = OpenAICompatConfig(
         base_url=base_url,
         model="test-model",
         extra_body=extra_body or {},
     )
-    adapter = OpenAIAdapter(cfg, secrets)
+    adapter = OpenAIAdapter(cfg, api_key="sk-test")
     client = _FakeClient(content, finish_reason)
     adapter._client = client
     return adapter, client
@@ -72,6 +71,26 @@ def test_truncated_output_raises_for_retry():
     adapter, _ = _adapter('{"partial":', finish_reason="length")
     with pytest.raises(ValueError):
         adapter.complete("Return JSON.", json_schema={"type": "object"})
+
+
+def test_reasoning_model_quirks_rename_tokens_and_drop_temperature():
+    adapter, client = _adapter('{"ok": true}')
+    adapter.cfg.max_tokens_param = "max_completion_tokens"
+    adapter.cfg.send_temperature = False
+    adapter.complete("Return JSON.", json_schema={"type": "object"}, max_tokens=321)
+    assert client.completions.kwargs is not None
+    kwargs = client.completions.kwargs
+    assert kwargs["max_completion_tokens"] == 321
+    assert "max_tokens" not in kwargs
+    assert "temperature" not in kwargs
+
+
+def test_json_mode_off_omits_response_format():
+    adapter, client = _adapter('{"ok": true}')
+    adapter.cfg.json_mode = False
+    adapter.complete("Return JSON.", json_schema={"type": "object"})
+    assert client.completions.kwargs is not None
+    assert "response_format" not in client.completions.kwargs
 
 
 def test_extra_body_is_omitted_when_not_configured():

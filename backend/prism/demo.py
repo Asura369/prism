@@ -12,7 +12,7 @@ from .plugins.registry import PluginRegistry
 
 def main() -> int:
     cfg = load_config()
-    secrets = Secrets(fake_adapters=True, _env_file=None)
+    secrets = Secrets(fake_adapters=True)
     db_path = resolve_path(cfg.run.db_path, cfg.base_dir)
     db.init_db(db_path)
     conn = db.connect(db_path)

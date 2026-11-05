@@ -1,0 +1,11 @@
+name: deepseek
+label: DeepSeek
+base_url: https://api.deepseek.com
+default_model: deepseek-flash
+models:
+  - deepseek-flash
+json_mode: true
+# Prism wants predictable latency for spec/metadata calls, so thinking stays off.
+extra_body:
+  thinking:
+    type: disabled

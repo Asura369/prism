@@ -58,6 +58,18 @@ CREATE TABLE IF NOT EXISTS review_meta (
   decided_at  TEXT,
   decision    TEXT
 );
+
+-- Provider API keys live apart from ordinary settings so a settings read
+-- cannot serialize one by accident.
+CREATE TABLE IF NOT EXISTS provider_secrets (
+  name  TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 """
 
 
@@ -90,6 +102,17 @@ def init_db(db_path: str | Path) -> None:
         conn.commit()
     finally:
         conn.close()
+    _secure_local_paths(db_path)
+
+
+def _secure_local_paths(db_path: str | Path) -> None:
+    """The DB holds provider keys; keep it out of other local accounts' reach."""
+    path = Path(db_path)
+    try:
+        path.parent.chmod(0o700)
+        path.chmod(0o600)
+    except OSError:  # noqa: BLE001 - best effort, e.g. unusual mounts
+        pass
 
 
 def _row_to_job(row: sqlite3.Row) -> Job:
@@ -300,4 +323,45 @@ def cache_set(conn: sqlite3.Connection, key: str, payload: str, ttl_min: int) ->
         "ON CONFLICT(key) DO UPDATE SET payload = excluded.payload, expires_at = excluded.expires_at",
         (key, payload, expires),
     )
+    conn.commit()
+
+
+# ---- provider connections, keys and app settings -----------------------------
+
+
+def get_secret(conn: sqlite3.Connection, name: str) -> str | None:
+    row = conn.execute("SELECT value FROM provider_secrets WHERE name = ?", (name,)).fetchone()
+    return row["value"] if row else None
+
+
+def set_secret(conn: sqlite3.Connection, name: str, value: str) -> None:
+    conn.execute(
+        "INSERT INTO provider_secrets (name, value) VALUES (?, ?) "
+        "ON CONFLICT(name) DO UPDATE SET value = excluded.value",
+        (name, value),
+    )
+    conn.commit()
+
+
+def delete_secret(conn: sqlite3.Connection, name: str) -> None:
+    conn.execute("DELETE FROM provider_secrets WHERE name = ?", (name,))
+    conn.commit()
+
+
+def get_setting(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else None
+
+
+def set_setting(conn: sqlite3.Connection, key: str, value: str) -> None:
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES (?, ?) "
+        "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (key, value),
+    )
+    conn.commit()
+
+
+def delete_setting(conn: sqlite3.Connection, key: str) -> None:
+    conn.execute("DELETE FROM settings WHERE key = ?", (key,))
     conn.commit()

@@ -13,13 +13,7 @@ from prism.main import create_app
 
 
 def _client(cfg: Config) -> TestClient:
-    secrets = Secrets(
-        llm_key="",
-        fake_adapters=True,
-        prism_config="",
-        prism_db_path="",
-        _env_file=None,
-    )
+    secrets = Secrets(fake_adapters=True)
     return TestClient(create_app(cfg, secrets))
 
 

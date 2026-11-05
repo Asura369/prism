@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .errors import ConfigError
 
@@ -25,16 +25,19 @@ class RunConfig(_Model):
 
 
 class OpenAICompatConfig(_Model):
+    """Request shape for the shared OpenAI-compatible adapter.
+
+    Built from a provider descriptor plus the stored connection; no YAML of its own.
+    """
+
     base_url: str = "https://api.openai.com/v1"
     model: str = "gpt-4o-mini"
     timeout_s: int = 60
     extra_body: dict[str, Any] = Field(default_factory=dict)
-
-
-class LLMConfig(_Model):
-    default: str = "openai_compat"
-    openai_compat: OpenAICompatConfig = Field(default_factory=OpenAICompatConfig)
-    fallback: list[str] = Field(default_factory=lambda: ["fake"])
+    headers: dict[str, str] = Field(default_factory=dict)  # e.g. gateway routing headers
+    json_mode: bool = True  # false for gateways that reject response_format=json_object
+    max_tokens_param: str = "max_tokens"  # reasoning models want max_completion_tokens
+    send_temperature: bool = True  # reasoning models reject a non-default temperature
 
 
 class CardsConfig(_Model):
@@ -46,7 +49,6 @@ class ExportConfig(_Model):
 
 
 class AdaptersConfig(_Model):
-    llm: LLMConfig = Field(default_factory=LLMConfig)
     cards: CardsConfig = Field(default_factory=CardsConfig)
     export: ExportConfig = Field(default_factory=ExportConfig)
 
@@ -130,21 +132,17 @@ class Config(_Model):
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
 
 
-class Secrets(BaseSettings):
-    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore", populate_by_name=True)
+@dataclass
+class Secrets:
+    """The one runtime switch left: force the deterministic fake adapters."""
 
-    llm_key: str = Field("", validation_alias="LLM_KEY")
-    fake_adapters: bool = Field(False, validation_alias="FAKE_ADAPTERS")
-    prism_config: str = Field("", validation_alias="PRISM_CONFIG")
-    prism_db_path: str = Field("", validation_alias="PRISM_DB_PATH")
+    fake_adapters: bool = False
 
 
-def _config_path(explicit: Path | None = None, env_config: str | None = None) -> Path | None:
+def _config_path(explicit: Path | None = None) -> Path | None:
     candidates: list[Path] = []
     if explicit:
         candidates.append(explicit)
-    if env_config:
-        candidates.append(Path(env_config))
     candidates.extend([Path("./config.yaml"), Path("../config.yaml")])
     for candidate in candidates:
         if candidate.exists():
@@ -152,9 +150,8 @@ def _config_path(explicit: Path | None = None, env_config: str | None = None) ->
     return None
 
 
-def load_config(path: Path | None = None, *, env_file: bool = True) -> Config:
-    env = Secrets(_env_file=(".env", "../.env") if env_file else None)
-    cfg_path = _config_path(path, env.prism_config)
+def load_config(path: Path | None = None) -> Config:
+    cfg_path = _config_path(path)
     data: dict = {}
     if cfg_path:
         try:
@@ -163,8 +160,6 @@ def load_config(path: Path | None = None, *, env_file: bool = True) -> Config:
             raise ConfigError(f"Invalid YAML in {cfg_path}: {exc}") from exc
     cfg = Config.model_validate(data)
     cfg.base_dir = cfg_path.resolve().parent if cfg_path else Path.cwd()
-    if env.prism_db_path:
-        cfg.run.db_path = env.prism_db_path
     return cfg
 
 

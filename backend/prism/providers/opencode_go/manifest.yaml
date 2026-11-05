@@ -1,0 +1,16 @@
+name: opencode_go
+label: OpenCode Go
+base_url: https://opencode.ai/inference/go/openai/v1
+default_model: deepseek-v4.1-flash
+models:
+  - deepseek-v4.1-flash
+# The model supports JSON, but this gateway rejects response_format outright
+# (json_object and json_schema both 400 "not yet supported by atlas"), so the
+# schema goes in the prompt instead. Flip to true only if the gateway adds it.
+json_mode: false
+extra_body:
+  thinking:
+    type: disabled
+headers:
+  x-opencode-session: prism  # routing + prompt-cache key; any stable id works
+  user-agent: prism/1.0      # the gateway wants the client's name, not the SDK's
