@@ -10,26 +10,29 @@ export function ImageGallery({
   onSelect: (index: number) => void;
 }) {
   return (
-    <div className="flex gap-2.5 overflow-x-auto pb-2" role="listbox" aria-label="Slides">
-      {slides.map((src, slideIndex) => (
-        <button
-          key={src}
-          type="button"
-          role="option"
-          aria-selected={slideIndex === index}
-          aria-label={`Slide ${slideIndex + 1}`}
-          onClick={() => onSelect(slideIndex)}
-          className={cn(
-            "relative w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all",
-            slideIndex === index ? "border-ember-500 ring-2 ring-ember-500/20" : "border-transparent opacity-70 hover:opacity-100",
-          )}
-        >
-          <img src={src} alt="" className="aspect-[4/5] w-full object-cover" loading="lazy" />
-          <span className="absolute bottom-1 left-1 rounded bg-ink-900/70 px-1 text-[10px] font-semibold text-white">
-            {slideIndex + 1}
-          </span>
-        </button>
-      ))}
+    <div className="flex gap-1.5 overflow-x-auto pb-1" role="listbox" aria-label="Slides">
+      {slides.map((src, slideIndex) => {
+        const active = slideIndex === index;
+        return (
+          <button
+            key={src}
+            type="button"
+            role="option"
+            aria-selected={active}
+            aria-label={`Slide ${slideIndex + 1}`}
+            onClick={() => onSelect(slideIndex)}
+            className={cn(
+              "relative w-[58px] shrink-0 overflow-hidden border p-0 transition-opacity duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-paper-50",
+              active ? "border-paper-50 opacity-100" : "border-gate-700 opacity-60 hover:opacity-90",
+            )}
+          >
+            <img src={src} alt="" className="aspect-[4/5] w-full object-cover" loading="lazy" />
+            <span className="fac absolute bottom-0 left-0 bg-gate-900/85 px-1 py-px text-[9px] text-paper-50">
+              {String(slideIndex + 1).padStart(2, "0")}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

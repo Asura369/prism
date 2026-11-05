@@ -3,9 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Upload } from "lucide-react";
 import { api } from "@/api/client";
 import { CandidateCard } from "@/components/CandidateCard";
+import { PlateHeader, SectionHeading } from "@/components/Plate";
 import { SourceToggleGroup, type SourceOption } from "@/components/SourceToggleGroup";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { DiscoverResponse, ScoredCandidate } from "@/types";
@@ -113,156 +113,157 @@ export default function Discover() {
     !isLoading && candidates.length === 0 && (trendsQuery.data?.sources_failed.length ?? 0) > 0;
 
   return (
-    <div className="flex flex-col gap-7">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">Discover</p>
-          <h1 className="page-title mt-2">Find the next topic</h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-500">
-            Pull candidates from enabled sources, score them for safety and carousel viability, then pick an angle.
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PlateHeader
+        title="Find a topic"
+        meta="Pull candidates from enabled sources, score them for safety and carousel viability, then pick an angle."
+        actions={
+          <>
+            <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-[3px] border border-ink-900/20 px-3 text-[12.5px] font-medium text-ink-900 transition-colors hover:border-ink-900/45 hover:bg-ink-900/[0.04]">
+              <Upload className="h-3.5 w-3.5" />
+              {upload.isPending ? "Importing…" : "Upload Trends CSV"}
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="sr-only"
+                disabled={upload.isPending}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) upload.mutate(file);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            <Button variant="outline" onClick={() => trendsQuery.refetch()} disabled={!activeSources.length}>
+              Refresh
+            </Button>
+          </>
+        }
+      />
 
-      <Card>
-        <CardContent className="flex flex-col gap-5 pt-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
-                Region
-                <select
-                  value={region}
-                  onChange={(event) => setRegion(event.target.value)}
-                  className="h-10 rounded-xl border border-ink-900/15 bg-white px-3 text-sm font-normal text-ink-900"
-                >
-                  {REGIONS.map((code) => (
-                    <option key={code} value={code}>
-                      {code}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
-                Window
-                <select
-                  value={windowH}
-                  onChange={(event) => setWindowH(Number(event.target.value))}
-                  className="h-10 rounded-xl border border-ink-900/15 bg-white px-3 text-sm font-normal text-ink-900"
-                >
-                  {WINDOWS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-ink-900/15 bg-white/60 px-4 py-2 text-xs font-semibold text-ink-700 hover:border-ink-900/30">
-                <Upload className="h-3.5 w-3.5" />
-                {upload.isPending ? "Importing…" : "Upload Trends CSV"}
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  className="sr-only"
-                  disabled={upload.isPending}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) upload.mutate(file);
-                    event.target.value = "";
-                  }}
-                />
-              </label>
-              <Button variant="outline" size="sm" onClick={() => trendsQuery.refetch()} disabled={!activeSources.length}>
-                Refresh
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <p className="eyebrow mb-2">Sources</p>
+      <section className="rounded-plate border border-ink-900/12 bg-paper-50">
+        <div className="grid gap-4 border-b border-ink-900/10 p-4 sm:grid-cols-[120px_140px_minmax(0,1fr)] sm:items-start">
+          <label className="flex flex-col gap-1.5">
+            <span className="label">Region</span>
+            <select
+              value={region}
+              onChange={(event) => setRegion(event.target.value)}
+              className="h-9 rounded-field border border-ink-900/18 bg-paper-50 px-3 text-[13px] text-ink-900 transition-colors hover:border-ink-900/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ink-900/60"
+            >
+              {REGIONS.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="label">Window</span>
+            <select
+              value={windowH}
+              onChange={(event) => setWindowH(Number(event.target.value))}
+              className="h-9 rounded-field border border-ink-900/18 bg-paper-50 px-3 text-[13px] text-ink-900 transition-colors hover:border-ink-900/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ink-900/60"
+            >
+              {WINDOWS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-col gap-1.5">
+            <span className="label">Sources</span>
             {settingsQuery.isLoading ? (
-              <p className="text-xs text-ink-400">Loading sources…</p>
+              <p className="text-[11.5px] text-ink-400">Loading sources…</p>
             ) : availableSources.length === 0 ? (
-              <p className="text-xs text-ink-400">No fetchable sources are enabled in config.yaml.</p>
+              <p className="text-[11.5px] text-ink-400">No fetchable sources are enabled in config.yaml.</p>
             ) : (
               <SourceToggleGroup sources={availableSources} selected={activeSources} onChange={setSelected} />
             )}
-            <p className="mt-2 text-[11px] text-ink-400">CSV upload and manual ideas stay available.</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Add a manual idea</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="grid gap-3 md:grid-cols-[1.2fr_1.5fr_auto]"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (title.trim()) manual.mutate();
-            }}
-          >
-            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Topic title" maxLength={200} />
-            <Textarea
-              value={snippet}
-              onChange={(event) => setSnippet(event.target.value)}
-              placeholder="Optional context or source URL"
-              className="min-h-11 md:min-h-11"
-              rows={1}
-            />
-            <div className="flex gap-2">
-              <Input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="URL (optional)" />
-              <Button type="submit" disabled={!title.trim() || manual.isPending}>
-                {manual.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Add
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        <form
+          className="grid gap-2 p-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_minmax(0,0.9fr)_auto]"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (title.trim()) manual.mutate();
+          }}
+        >
+          <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Topic title" maxLength={200} />
+          <Textarea
+            value={snippet}
+            onChange={(event) => setSnippet(event.target.value)}
+            placeholder="Optional context or source URL"
+            className="min-h-9 md:min-h-9"
+            rows={1}
+          />
+          <Input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="URL (optional)" />
+          <Button type="submit" disabled={!title.trim() || manual.isPending}>
+            {manual.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+            Add
+          </Button>
+        </form>
+      </section>
 
-      {notice && <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
-      {error && <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {trendsQuery.isError && (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {notice ? (
+        <p className="border border-spectrum-export/35 bg-spectrum-export/[0.07] px-3.5 py-2.5 text-[12.5px] text-[#1f7444]">
+          {notice}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="border border-signal/30 bg-signal/[0.06] px-3.5 py-2.5 text-[12.5px] text-[#a32d1b]">{error}</p>
+      ) : null}
+      {trendsQuery.isError ? (
+        <p className="border border-signal/30 bg-signal/[0.06] px-3.5 py-2.5 text-[12.5px] text-[#a32d1b]">
           Could not fetch candidates: {(trendsQuery.error as Error).message}
         </p>
-      )}
-      {trendsQuery.data && trendsQuery.data.sources_failed.length > 0 && candidates.length > 0 && (
-        <p className="text-xs text-ink-400">
+      ) : null}
+      {trendsQuery.data && trendsQuery.data.sources_failed.length > 0 && candidates.length > 0 ? (
+        <p className="text-[11.5px] text-ink-400">
           Some sources failed: {trendsQuery.data.sources_failed.join(", ")}.
         </p>
-      )}
-      {allFailed && (
-        <p className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          All selected sources failed. Check your network or start from a manual idea.
+      ) : null}
+      {allFailed ? (
+        <p className="border border-spectrum-policy/35 bg-spectrum-policy/[0.07] px-3.5 py-2.5 text-[12.5px] text-[#7c4a12]">
+          Every selected source failed. Check the network, or start from a manual idea above.
         </p>
-      )}
+      ) : null}
 
-      {isLoading ? (
-        <div className="grid gap-5 md:grid-cols-2">
-          {[0, 1, 2, 3].map((item) => (
-            <div key={item} className="h-64 animate-pulse rounded-card border border-ink-900/10 bg-white/50" />
-          ))}
-        </div>
-      ) : candidates.length === 0 ? (
-        <Card>
-          <CardContent className="py-14 text-center text-sm text-ink-500">
-            {activeSources.length === 0
-              ? "Choose at least one source, upload a CSV, or add a manual idea."
-              : "No candidates passed the safety filter. Try another source or add a manual idea."}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-5 md:grid-cols-2">
-          {candidates.map((item, index) => (
-            <CandidateCard key={item.candidate.id} item={item} rank={index + 1} />
-          ))}
-        </div>
-      )}
+      <section>
+        <SectionHeading aside={isLoading ? "fetching" : `${candidates.length} scored`}>
+          Candidates
+        </SectionHeading>
+
+        {isLoading ? (
+          <div className="rounded-plate border border-ink-900/12 bg-paper-50 px-4">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="flex items-start gap-3 border-b border-ink-900/10 py-4 last:border-0">
+                <div className="mt-1 h-2.5 w-5 animate-pulse rounded-[1px] bg-paper-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-2 w-24 animate-pulse rounded-[1px] bg-paper-200" />
+                  <div className="h-3 w-2/3 animate-pulse rounded-[1px] bg-paper-200" />
+                  <div className="h-2.5 w-1/2 animate-pulse rounded-[1px] bg-paper-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : candidates.length === 0 ? (
+          <div className="rounded-plate border border-dashed border-ink-900/20 bg-paper-50/50 px-6 py-12">
+            <p className="max-w-md text-[12.5px] leading-relaxed text-ink-500">
+              {activeSources.length === 0
+                ? "Choose at least one source, upload a CSV, or add a manual idea."
+                : "No candidates passed the safety filter. Try another source or add a manual idea."}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-plate border border-ink-900/12 bg-paper-50 px-4">
+            {candidates.map((item, index) => (
+              <CandidateCard key={item.candidate.id} item={item} rank={index + 1} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

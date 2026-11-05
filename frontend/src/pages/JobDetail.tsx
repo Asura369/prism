@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Download, RotateCcw } from "lucide-react";
+import { Download, RotateCcw } from "lucide-react";
 import { api } from "@/api/client";
+import { SectionHeading } from "@/components/Plate";
 import { StageStepper } from "@/components/StageStepper";
 import { StatusChip } from "@/components/StatusChip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { elapsed, relativeTime } from "@/lib/utils";
 import type { JobDetail as JobDetailType } from "@/types";
 
@@ -53,15 +53,21 @@ export default function JobDetail() {
   }, [data?.job.status, jobId, navigate]);
 
   if (jobQuery.isLoading) {
-    return <p className="text-sm text-ink-500">Loading job…</p>;
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="h-6 w-56 animate-pulse rounded-[2px] bg-paper-200" />
+        <div className="h-24 animate-pulse rounded-plate border border-ink-900/10 bg-paper-50" />
+      </div>
+    );
   }
+
   if (jobQuery.isError || !data) {
     return (
       <div className="flex flex-col gap-4">
-        <Link to="/" className="flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
-          <ArrowLeft className="h-4 w-4" /> Dashboard
+        <Link to="/" className="text-[12px] font-medium text-ink-500 hover:text-ink-900">
+          ← Queue
         </Link>
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="border border-signal/30 bg-signal/[0.06] px-3.5 py-2.5 text-[12.5px] text-[#a32d1b]">
           Could not load this job: {(jobQuery.error as Error)?.message ?? "unknown error"}
         </p>
       </div>
@@ -72,130 +78,123 @@ export default function JobDetail() {
   const workerDown = healthQuery.data && !healthQuery.data.worker.alive;
 
   return (
-    <div className="flex flex-col gap-7">
-      <div>
-        <Link to="/" className="mb-5 flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
-          <ArrowLeft className="h-4 w-4" /> Dashboard
+    <div className="flex flex-col gap-6">
+      <header className="border-b border-ink-900/12 pb-5">
+        <Link
+          to="/"
+          className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-500 transition-colors hover:text-ink-900"
+        >
+          ← Queue
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="eyebrow">{job.job_id}</span>
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          <div className="min-w-0 basis-full sm:basis-auto">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
+              <span className="fac">{job.job_id}</span>
               <StatusChip status={job.status} />
+              <Badge variant="outline">{job.plugin.replace("_carousel", "")}</Badge>
             </div>
-            <h1 className="page-title mt-2 max-w-2xl">{job.topic}</h1>
-            <p className="mt-2 text-sm text-ink-500">
-              {job.plugin} · started {relativeTime(job.started_at)} · {elapsed(job.started_at, job.finished_at)} elapsed
+            <h1 className="mt-2 max-w-3xl text-[21px] font-semibold leading-[1.14] tracking-[-0.022em] text-ink-900 sm:text-[24px] lg:text-[26px]">
+              {job.topic}
+            </h1>
+            <p className="mt-2 text-[12.5px] text-ink-500">
+              {job.started_at
+                ? `started ${relativeTime(job.started_at)} · ${elapsed(job.started_at, job.finished_at)} elapsed`
+                : `queued ${relativeTime(job.created_at)} · waiting for the worker`}
             </p>
           </div>
-          <div className="flex gap-2">
-            {(job.status === "QUEUED" || job.status === "RUNNING") && (
+          <div className="flex flex-wrap gap-2">
+            {job.status === "QUEUED" || job.status === "RUNNING" ? (
               <Button variant="outline" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
-                {cancel.isPending ? "Cancelling…" : "Cancel"}
+                {cancel.isPending ? "Cancelling…" : "Cancel job"}
               </Button>
-            )}
-            {job.status === "FAILED" && (
+            ) : null}
+            {job.status === "FAILED" ? (
               <Button onClick={() => retry.mutate()} disabled={retry.isPending}>
-                <RotateCcw className="h-4 w-4" /> Retry
+                <RotateCcw className="h-3.5 w-3.5" /> Retry
               </Button>
-            )}
-            {job.status === "REVIEW_READY" && (
-              <Button asChild variant="ember">
+            ) : null}
+            {job.status === "REVIEW_READY" ? (
+              <Button asChild>
                 <a href={`/media/review/${job.job_id}/carousel.zip`} download>
-                  <Download className="h-4 w-4" /> Download zip
+                  <Download className="h-3.5 w-3.5" /> Download zip
                 </a>
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
-      </div>
+      </header>
 
-      <Card>
-        <CardContent className="pt-6">
-          <StageStepper stages={stages} />
-        </CardContent>
-      </Card>
+      <section>
+        <SectionHeading aside={`${stages.length} stages`}>Pipeline</SectionHeading>
+        <StageStepper stages={stages} />
+      </section>
 
-      {job.status === "RUNNING" && (
-        <div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-ink-900/10">
-            <div className="h-full bg-ember-500 transition-all" style={{ width: `${Math.round(job.progress * 100)}%` }} />
-          </div>
-          <p className="mt-2 text-xs text-ink-400">
-            {Math.round(job.progress * 100)}% · {job.stage ?? "starting"}
-          </p>
-        </div>
-      )}
-
-      {job.status === "QUEUED" && workerDown && (
-        <p className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      {job.status === "QUEUED" && workerDown ? (
+        <p className="border border-spectrum-policy/35 bg-spectrum-policy/[0.07] px-3.5 py-2.5 text-[12.5px] text-[#7c4a12]">
           This job is queued because no worker is running. Start it with{" "}
-          <code className="rounded bg-amber-900/10 px-1.5 py-0.5 font-mono text-xs">make worker</code>.
+          <code className="rounded-[2px] bg-[#7c4a12]/10 px-1 font-mono text-[11px]">make worker</code>.
         </p>
-      )}
+      ) : null}
 
-      {job.status === "FAILED" && job.error && (
-        <div className="rounded-card border border-red-200 bg-red-50 p-5">
+      {job.status === "FAILED" && job.error ? (
+        <div className="border border-signal/30 bg-signal/[0.05] p-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="danger">{job.error.error_class}</Badge>
-            {job.error.stage && <span className="text-xs font-semibold uppercase tracking-wide text-red-700/70">at {job.error.stage}</span>}
+            {job.error.stage ? (
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#a32d1b]/75">
+                at {job.error.stage}
+              </span>
+            ) : null}
           </div>
-          <p className="mt-3 text-sm leading-relaxed text-red-800">{job.error.message}</p>
+          <p className="mt-2.5 max-w-[75ch] text-[12.5px] leading-relaxed text-[#7a2b1c]">{job.error.message}</p>
           <a
             href={`/api/jobs/${job.job_id}/logs`}
-            className="mt-3 inline-block text-xs font-semibold text-red-700 underline underline-offset-2"
+            className="mt-2.5 inline-block text-[11px] font-semibold text-[#a32d1b] underline decoration-[#a32d1b]/30 underline-offset-2 hover:decoration-[#a32d1b]"
           >
             Download logs
           </a>
         </div>
-      )}
+      ) : null}
 
-      {job.status === "REVIEW_READY" && (
-        <Card className="border-ember-500/25 bg-ember-500/5">
-          <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
-            <div>
-              <p className="text-sm font-semibold text-ink-900">Deck is ready for review</p>
-              <p className="mt-1 text-sm text-ink-500">
-                Artifact at <code className="font-mono text-xs">review/{job.job_id}/</code>. Approve or edit it on the
-                review page.
-              </p>
-            </div>
-            <Badge variant="ember">review pending</Badge>
-          </CardContent>
-        </Card>
-      )}
+      {job.status === "REVIEW_READY" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-ink-900/15 bg-paper-50 px-4 py-3.5">
+          <div>
+            <p className="text-[13px] font-semibold text-ink-900">Deck is ready for review</p>
+            <p className="mt-0.5 text-[11.5px] text-ink-500">
+              Artifact at <code className="font-mono text-[11px]">review/{job.job_id}/</code>. Edit metadata and decide on
+              the review plate.
+            </p>
+          </div>
+          <Badge variant="default">Awaiting you</Badge>
+        </div>
+      ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Live log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              ref={logRef}
-              className="max-h-80 overflow-y-auto rounded-xl bg-ink-900 p-4 font-mono text-[11px] leading-relaxed text-cream-200"
-            >
-              {events.length === 0 ? (
-                <p className="text-cream-200/40">Waiting for worker events…</p>
-              ) : (
-                events.map((event) => (
-                  <div key={event.id} className="flex gap-3">
-                    <span className="shrink-0 text-cream-200/35">{event.ts.slice(11, 19)}</span>
-                    <span className={event.level === "error" ? "text-red-300" : "text-cream-200/80"}>
-                      <span className="uppercase text-ember-400/80">{event.stage ?? "job"}</span> {event.message}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <section>
+          <SectionHeading aside="tail 200 events">Live log</SectionHeading>
+          <div
+            ref={logRef}
+            className="max-h-80 overflow-y-auto rounded-plate border border-ink-900/12 bg-gate-900 p-3.5 font-mono text-[10.5px] leading-[1.7]"
+          >
+            {events.length === 0 ? (
+              <p className="text-paper-50/35">Waiting for worker events…</p>
+            ) : (
+              events.map((event) => (
+                <div key={event.id} className="flex gap-3">
+                  <span className="tnum shrink-0 text-paper-50/30">{event.ts.slice(11, 19)}</span>
+                  <span className={event.level === "error" ? "text-[#ff9a8a]" : "text-paper-200/80"}>
+                    <span className="uppercase tracking-[0.08em] text-paper-50/40">{event.stage ?? "job"}</span>{" "}
+                    {event.message}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Job facts</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm">
+        <section>
+          <SectionHeading>Job facts</SectionHeading>
+          <dl className="flex flex-col">
             {[
               ["Plugin", job.plugin],
               ["Seed", String(job.seed)],
@@ -203,13 +202,16 @@ export default function JobDetail() {
               ["Finished", job.finished_at ? relativeTime(job.finished_at) : "—"],
               ["Recommended", job.recommended_plugin ?? "—"],
             ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between gap-4 border-b border-ink-900/5 pb-2 last:border-0">
-                <span className="text-ink-400">{label}</span>
-                <span className="text-right font-medium text-ink-900">{value}</span>
+              <div
+                key={label}
+                className="flex items-baseline justify-between gap-4 border-b border-ink-900/8 py-1.5 last:border-0"
+              >
+                <dt className="shrink-0 text-[12px] text-ink-400">{label}</dt>
+                <dd className="tnum min-w-0 truncate text-right text-[12.5px] font-medium text-ink-900">{value}</dd>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </dl>
+        </section>
       </div>
     </div>
   );

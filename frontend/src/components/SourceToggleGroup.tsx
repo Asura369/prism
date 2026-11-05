@@ -20,7 +20,7 @@ export function SourceToggleGroup({
   }
 
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="Trend sources">
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Trend sources">
       {sources.map((source) => {
         const active = selected.includes(source.name);
         return (
@@ -30,13 +30,13 @@ export function SourceToggleGroup({
             aria-pressed={active}
             onClick={() => toggle(source.name)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+              "inline-flex items-center gap-1.5 rounded-[3px] border px-2.5 py-1 text-[11.5px] font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ink-900/60",
               active
-                ? "border-ink-900 bg-ink-900 text-cream-50"
-                : "border-ink-900/15 bg-white/60 text-ink-500 hover:border-ink-900/30",
+                ? "border-ink-900 bg-ink-900 text-paper-50"
+                : "border-ink-900/18 bg-paper-50 text-ink-500 hover:border-ink-900/35 hover:text-ink-900",
             )}
           >
-            {active && <Check className="h-3 w-3" />}
+            {active ? <Check className="h-3 w-3" /> : null}
             {source.label}
           </button>
         );

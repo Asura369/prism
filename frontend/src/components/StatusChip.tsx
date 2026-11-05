@@ -1,26 +1,20 @@
 import { Badge } from "@/components/ui/badge";
 import type { JobStatus } from "@/types";
 
-const VARIANTS: Record<JobStatus, "default" | "outline" | "ember" | "success" | "danger" | "amber" | "blue"> = {
-  QUEUED: "outline",
-  RUNNING: "blue",
-  REVIEW_READY: "ember",
-  APPROVED: "success",
-  REJECTED: "danger",
-  FAILED: "danger",
-  CANCELLED: "outline",
-};
+type Variant = "default" | "outline" | "success" | "danger" | "blue";
 
-const LABELS: Record<JobStatus, string> = {
-  QUEUED: "Queued",
-  RUNNING: "Running",
-  REVIEW_READY: "Review ready",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-  FAILED: "Failed",
-  CANCELLED: "Cancelled",
+/** Status speaks in the same spectrum as the pipeline: no new colour vocabulary. */
+export const STATUS_META: Record<JobStatus, { variant: Variant; band: string; label: string }> = {
+  QUEUED: { variant: "outline", band: "bg-spectrum-spec/70", label: "Queued" },
+  RUNNING: { variant: "blue", band: "bg-spectrum-render", label: "Running" },
+  REVIEW_READY: { variant: "default", band: "bg-ink-900", label: "Review ready" },
+  APPROVED: { variant: "success", band: "bg-spectrum-export", label: "Approved" },
+  REJECTED: { variant: "danger", band: "bg-signal", label: "Rejected" },
+  FAILED: { variant: "danger", band: "bg-signal", label: "Failed" },
+  CANCELLED: { variant: "outline", band: "bg-ink-400/40", label: "Cancelled" },
 };
 
 export function StatusChip({ status }: { status: JobStatus }) {
-  return <Badge variant={VARIANTS[status]}>{LABELS[status] ?? status}</Badge>;
+  const meta = STATUS_META[status];
+  return <Badge variant={meta.variant}>{meta.label ?? status}</Badge>;
 }

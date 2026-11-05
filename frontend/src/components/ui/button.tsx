@@ -4,21 +4,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ember-500/50 disabled:pointer-events-none disabled:opacity-45",
+  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-[3px] text-[13px] font-medium transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ink-900/70 disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        default: "bg-ink-900 text-cream-50 hover:bg-ink-700",
-        ember: "bg-ember-500 text-white hover:bg-ember-600",
-        outline: "border border-ink-900/15 bg-transparent hover:bg-ink-900/5",
-        ghost: "hover:bg-ink-900/5",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
+        default: "bg-ink-900 text-paper-50 hover:bg-ink-700",
+        outline:
+          "border border-ink-900/20 bg-transparent text-ink-900 hover:border-ink-900/45 hover:bg-ink-900/[0.04]",
+        ghost: "text-ink-700 hover:bg-ink-900/[0.06] hover:text-ink-900",
+        signal: "bg-signal text-paper-50 hover:brightness-95",
+        destructive: "bg-signal text-paper-50 hover:brightness-95",
       },
       size: {
-        default: "h-10 px-5",
-        sm: "h-8 px-3 text-xs",
-        lg: "h-12 px-7 text-base",
-        icon: "h-9 w-9",
+        default: "h-9 px-3.5",
+        sm: "h-8 px-3 text-[12px]",
+        lg: "h-11 px-5 text-[14px]",
+        icon: "h-8 w-8",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

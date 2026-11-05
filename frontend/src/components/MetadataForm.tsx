@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Save, X } from "lucide-react";
+import { ChevronRight, Plus, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +39,7 @@ export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Pr
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
 
-  const counterClass = caption.length > 2200 ? "text-red-600" : "text-ink-400";
+  const counterClass = caption.length > 2200 ? "text-signal" : "text-ink-400";
 
   const patch = useMemo<Partial<ReviewMetadata>>(
     () => ({
@@ -93,12 +93,12 @@ export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Pr
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
       <div>
-        <label htmlFor="meta-title" className="eyebrow">
+        <label htmlFor="meta-title" className="label">
           Title
         </label>
         <Input
           id="meta-title"
-          className="mt-2"
+          className="mt-1.5"
           value={title}
           maxLength={120}
           onChange={(event) => {
@@ -109,15 +109,15 @@ export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Pr
       </div>
 
       <div>
-        <div className="flex items-center justify-between">
-          <label htmlFor="meta-caption" className="eyebrow">
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor="meta-caption" className="label">
             Caption
           </label>
-          <span className={`text-[11px] ${counterClass}`}>{caption.length} / 2200</span>
+          <span className={`tnum text-[10.5px] ${counterClass}`}>{caption.length} / 2200</span>
         </div>
         <Textarea
           id="meta-caption"
-          className="mt-2 min-h-[150px]"
+          className="mt-1.5 min-h-[152px]"
           value={caption}
           maxLength={2200}
           onChange={(event) => {
@@ -128,34 +128,37 @@ export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Pr
       </div>
 
       <div>
-        <div className="flex items-center justify-between">
-          <span className="eyebrow">Hashtags</span>
-          <span className="text-[11px] text-ink-400">{hashtags.length} / 30</span>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="label">Hashtags</span>
+          <span className="tnum text-[10.5px] text-ink-400">{hashtags.length} / 30</span>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {hashtags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full bg-ink-900/5 px-2.5 py-1 text-xs text-ink-700"
-            >
-              #{tag}
-              <button
-                type="button"
-                aria-label={`Remove #${tag}`}
-                onClick={() => {
-                  setHashtags((existing) => existing.filter((item) => item !== tag));
-                  setSaved(false);
-                }}
-                className="text-ink-400 hover:text-ink-900"
+        {hashtags.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {hashtags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-[2px] border border-ink-900/12 bg-paper-100 px-1.5 py-0.5 text-[11.5px] text-ink-700"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="mt-2 flex gap-2">
+                #{tag}
+                <button
+                  type="button"
+                  aria-label={`Remove #${tag}`}
+                  onClick={() => {
+                    setHashtags((existing) => existing.filter((item) => item !== tag));
+                    setSaved(false);
+                  }}
+                  className="text-ink-400 transition-colors hover:text-ink-900"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="mt-2 flex gap-1.5">
           <Input
             aria-label="Add hashtag"
+            className="h-8 text-[12.5px]"
             value={draft}
             placeholder="Add a hashtag and press Enter"
             onChange={(event) => setDraft(event.target.value)}
@@ -166,23 +169,29 @@ export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Pr
               }
             }}
           />
-          <Button type="button" variant="outline" size="icon" aria-label="Add hashtag button" onClick={() => addHashtags(draft)}>
-            <Plus className="h-4 w-4" />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Add hashtag button"
+            onClick={() => addHashtags(draft)}
+          >
+            <Plus className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      <div>
-        <span className="eyebrow">Platforms</span>
-        <div className="mt-2 flex flex-col gap-2 text-sm text-ink-700">
+      <fieldset>
+        <legend className="label">Platforms</legend>
+        <div className="mt-2 flex flex-col gap-1.5 text-[12.5px] text-ink-700">
           {[
             ["instagram_feed", "Instagram feed"],
             ["instagram_story", "Instagram story"],
           ].map(([value, label]) => (
-            <label key={value} className="flex items-center gap-2.5">
+            <label key={value} className="flex items-center gap-2">
               <input
                 type="checkbox"
-                className="h-4 w-4 accent-[#D97757]"
+                className="h-3.5 w-3.5 rounded-[2px] border-ink-900/30"
                 checked={platforms.includes(value)}
                 onChange={() => togglePlatform(value)}
               />
@@ -190,24 +199,25 @@ export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Pr
             </label>
           ))}
         </div>
+      </fieldset>
+
+      <div className="flex items-center gap-2 border border-ink-900/10 bg-paper-100/70 px-2.5 py-2 text-[12px] text-ink-500">
+        <input type="checkbox" checked disabled className="h-3.5 w-3.5" />
+        AI disclosure — required, locked on
       </div>
 
-      <label className="flex items-center gap-2.5 text-sm text-ink-500">
-        <input type="checkbox" checked disabled className="h-4 w-4 accent-[#D97757]" />
-        AI disclosure (required, locked on)
-      </label>
-
-      <details className="rounded-xl border border-ink-900/10 bg-white/40 p-3">
-        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-ink-500">
+      <details className="group border-t border-ink-900/10 pt-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-400 transition-colors hover:text-ink-900">
           Alt text per slide ({altText.length})
+          <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90 motion-reduce:transition-none" />
         </summary>
-        <div className="mt-3 flex flex-col gap-3">
+        <div className="mt-3 flex flex-col gap-2.5">
           {altText.map((text, index) => (
-            <label key={index} className="flex flex-col gap-1 text-[11px] font-semibold text-ink-400">
-              Slide {index + 1}
+            <label key={index} className="flex flex-col gap-1">
+              <span className="fac text-[9.5px]">Slide {index + 1}</span>
               <Textarea
                 value={text}
-                className="min-h-[64px] text-sm"
+                className="min-h-[56px] text-[12.5px]"
                 onChange={(event) => setAlt(index, event.target.value)}
                 aria-label={`Alt text for slide ${index + 1}`}
               />
@@ -216,15 +226,18 @@ export function MetadataForm({ metadata, slideCount, onSave, onDirtyChange }: Pr
         </div>
       </details>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error ? <p className="text-[12px] text-signal">{error}</p> : null}
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={!dirty || saving || altText.some((text) => !text.trim())}>
-          <Save className="h-4 w-4" />
+      <div className="flex items-center gap-3 border-t border-ink-900/10 pt-4">
+        <Button type="submit" size="sm" disabled={!dirty || saving || altText.some((text) => !text.trim())}>
+          <Save className="h-3.5 w-3.5" />
           {saving ? "Saving…" : "Save changes"}
         </Button>
-        {saved && !dirty && <span className="text-xs font-medium text-emerald-700">Saved</span>}
-        {!dirty && !saved && <span className="text-xs text-ink-400">No unsaved changes</span>}
+        {saved && !dirty ? (
+          <span className="text-[11.5px] font-medium text-[#1f7444]">Saved</span>
+        ) : !dirty ? (
+          <span className="text-[11.5px] text-ink-400">No unsaved changes</span>
+        ) : null}
       </div>
     </form>
   );

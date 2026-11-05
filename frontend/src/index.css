@@ -1,34 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream-50: #FBF8F2;
-  --color-cream-100: #FAF6EE;
-  --color-cream-200: #F1EADF;
-  --color-cream-300: #E3D8C8;
-  --color-ink-900: #1E1B18;
-  --color-ink-700: #3D3833;
-  --color-ink-500: #6B655E;
-  --color-ink-400: #8A8580;
-  --color-ember-400: #E08A6C;
-  --color-ember-500: #D97757;
-  --color-ember-600: #C4623F;
+  /* Paper — the plate ground */
+  --color-paper-50: #fcfcf9;
+  --color-paper-100: #f4f3ec;
+  --color-paper-200: #e9e7dc;
+  --color-paper-300: #d6d3c4;
+
+  /* Ink — everything printed */
+  --color-ink-900: #17170f;
+  --color-ink-700: #3b3b31;
+  --color-ink-500: #5f5f54;
+  --color-ink-400: #6f6f66;
+
+  /* The gate — the dark surround a deck is judged on */
+  --color-gate-900: #131310;
+  --color-gate-800: #1c1c17;
+  --color-gate-700: #2b2b23;
+
+  /* The spectrum — one band per pipeline stage. Colour is data, never chrome. */
+  --color-spectrum-spec: #4b32c3;
+  --color-spectrum-ingest: #2f5bd0;
+  --color-spectrum-render: #1789a8;
+  --color-spectrum-export: #2e9e5b;
+  --color-spectrum-metadata: #8f7c12;
+  --color-spectrum-policy: #c9761e;
+  --color-spectrum-validate: #c4432e;
+  --color-spectrum-publish: #a32250;
+
+  /* Signal — attention, failure, stop. The red end of the same spectrum. */
+  --color-signal: #c4432e;
+
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --radius-card: 18px;
-  --shadow-card: 0 1px 2px rgba(30, 27, 24, 0.04), 0 12px 32px -20px rgba(30, 27, 24, 0.25);
+  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+  --radius-plate: 4px;
+  --radius-field: 3px;
 }
 
 @font-face {
   font-family: "Inter";
-  src: url("/fonts/Inter-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Inter";
-  src: url("/fonts/Inter-Bold.ttf") format("truetype");
-  font-weight: 700;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -36,23 +49,99 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
+
   body {
-    @apply bg-cream-50 text-ink-900 font-sans;
+    @apply bg-paper-100 font-sans text-[14px] leading-[1.55] text-ink-900;
+    font-optical-sizing: auto;
   }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
   ::selection {
-    @apply bg-ember-400/30;
+    @apply bg-ink-900 text-paper-50;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink-900);
+    outline-offset: 2px;
+  }
+
+  /* High-contrast mode: utilities opt out of outline, so paint one anyway. */
+  @media (forced-colors: active) {
+    *:focus-visible {
+      outline: 2px solid CanvasText !important;
+      outline-offset: 2px;
+    }
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-paper-300) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-paper-300);
+    border: 3px solid var(--color-paper-100);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-400);
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--color-ink-900);
+  }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2386867a' stroke-width='1.4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 10px;
+    padding-right: 1.9rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer components {
-  .eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-400;
+  /* Field label, not a decorative eyebrow: it names the control below it. */
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-400;
   }
-  .page-title {
-    @apply text-3xl font-bold tracking-tight text-ink-900;
+
+  /* Fac number: the artifact's own filing label. */
+  .fac {
+    @apply text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-400;
+    font-variant-numeric: tabular-nums;
   }
+
   .rule {
-    @apply h-px w-full bg-ink-900/10;
+    @apply h-px w-full bg-ink-900/12;
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
   }
 }

@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { api } from "@/api/client";
 import { AngleCard } from "@/components/AngleCard";
+import { PlateHeader } from "@/components/Plate";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { TrendCandidate } from "@/types";
 
 export default function Angles() {
@@ -59,70 +59,78 @@ export default function Angles() {
   }
 
   if (!candidateId) {
-    return <p className="text-sm text-ink-500">No candidate selected. Start from Discover.</p>;
+    return <p className="text-[13px] text-ink-500">No candidate selected. Start from Discover.</p>;
   }
 
   return (
-    <div className="flex flex-col gap-7">
-      <div>
-        <Link to="/discover" className="mb-5 flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
-          <ArrowLeft className="h-4 w-4" /> Discover
-        </Link>
-        <p className="eyebrow">Angles</p>
-        <h1 className="page-title mt-2 max-w-3xl">{candidateInfo?.title ?? "Selected topic"}</h1>
-        <p className="mt-2 text-sm text-ink-500">
-          Three ways in. The recommendation is a starting point; override the plugin if another format fits better.
+    <div className="flex flex-col gap-6">
+      <PlateHeader
+        title={candidateInfo?.title ?? "Selected topic"}
+        back={
+          <Link to="/discover" className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-500 transition-colors hover:text-ink-900">
+            ← Discover
+          </Link>
+        }
+        meta="Three ways in. The route is a starting point; override the plugin if another format fits better."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => anglesQuery.refetch()}
+            disabled={anglesQuery.isFetching}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${anglesQuery.isFetching ? "animate-spin" : ""}`} /> Regenerate angles
+          </Button>
+        }
+      />
+
+      {anglesQuery.isError ? (
+        <div className="border border-spectrum-policy/35 bg-spectrum-policy/[0.07] px-3.5 py-3">
+          <p className="text-[12.5px] text-[#7c4a12]">
+            {(anglesQuery.error as Error).message || "Could not load angles."}
+          </p>
+          <Button asChild variant="outline" size="sm" className="mt-2.5">
+            <Link to="/discover">Back to Discover</Link>
+          </Button>
+        </div>
+      ) : null}
+
+      {actionError ? (
+        <p className="border border-signal/30 bg-signal/[0.06] px-3.5 py-2.5 text-[12.5px] text-[#a32d1b]">
+          {actionError}
         </p>
-      </div>
+      ) : null}
 
-      {anglesQuery.isError && (
-        <Card className="border-amber-300/60 bg-amber-50">
-          <CardContent className="flex flex-col items-start gap-3 py-6">
-            <p className="text-sm text-amber-900">
-              {(anglesQuery.error as Error).message || "Could not load angles."}
-            </p>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/discover">Back to Discover</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {actionError && (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</p>
-      )}
-
-      {anglesQuery.isLoading && (
-        <div className="grid gap-5 lg:grid-cols-3">
+      {anglesQuery.isLoading ? (
+        <div className="grid gap-4 lg:grid-cols-3">
           {[0, 1, 2].map((item) => (
-            <div key={item} className="h-80 animate-pulse rounded-card border border-ink-900/10 bg-white/50" />
+            <div key={item} className="h-72 animate-pulse rounded-plate border border-ink-900/10 bg-paper-50" />
           ))}
         </div>
-      )}
-
-      {angles.length > 0 && (
-        <>
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => anglesQuery.refetch()} disabled={anglesQuery.isFetching}>
-              <RefreshCw className={`h-3.5 w-3.5 ${anglesQuery.isFetching ? "animate-spin" : ""}`} />
-              Regenerate angles
-            </Button>
-          </div>
-          <div className="grid gap-5 lg:grid-cols-3">
-            {angles.map((angle, index) => (
-              <AngleCard
-                key={`${angle.hook}-${index}`}
-                angle={angle}
-                index={index}
-                plugins={plugins}
-                selectedPlugin={effectivePlugin(index, angle.recommended_plugin)}
-                onPluginChange={(plugin) => setPluginChoices((current) => ({ ...current, [index]: plugin }))}
-                onUse={() => select.mutate({ index, plugin: effectivePlugin(index, angle.recommended_plugin) })}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      ) : angles.length === 0 ? (
+        <div className="rounded-plate border border-dashed border-ink-900/20 bg-paper-50/50 px-6 py-12">
+          <p className="max-w-md text-[12.5px] leading-relaxed text-ink-500">
+            This run produced no angles. Regenerate them, or pick a different candidate from Discover.
+          </p>
+          <Button asChild variant="outline" size="sm" className="mt-4">
+            <Link to="/discover">Back to Discover</Link>
+          </Button>
+        </div>
+      ) : angles.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {angles.map((angle, index) => (
+            <AngleCard
+              key={`${angle.hook}-${index}`}
+              angle={angle}
+              index={index}
+              plugins={plugins}
+              selectedPlugin={effectivePlugin(index, angle.recommended_plugin)}
+              onPluginChange={(plugin) => setPluginChoices((current) => ({ ...current, [index]: plugin }))}
+              onUse={() => select.mutate({ index, plugin: effectivePlugin(index, angle.recommended_plugin) })}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

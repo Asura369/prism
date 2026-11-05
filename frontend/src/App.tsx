@@ -1,7 +1,8 @@
 import { NavLink, Outlet, Route, Routes } from "react-router";
-import { Compass, LayoutGrid, Plus, Settings as SettingsIcon, Puzzle } from "lucide-react";
+import { Compass, LayoutGrid, Plus, Puzzle, SlidersHorizontal } from "lucide-react";
 import { WorkerStatusBanner } from "@/components/WorkerStatusBanner";
 import { WorkerDot } from "@/components/WorkerDot";
+import { PlateHeader } from "@/components/Plate";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Dashboard from "@/pages/Dashboard";
@@ -14,74 +15,121 @@ import Plugins from "@/pages/Plugins";
 import Settings from "@/pages/Settings";
 
 const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutGrid, end: true },
-  { to: "/discover", label: "Discover", icon: Compass },
-  { to: "/plugins", label: "Plugins", icon: Puzzle },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/", label: "Queue", icon: LayoutGrid, end: true, folio: "01" },
+  { to: "/discover", label: "Discover", icon: Compass, folio: "02" },
+  { to: "/plugins", label: "Plugins", icon: Puzzle, folio: "03" },
+  { to: "/settings", label: "Settings", icon: SlidersHorizontal, folio: "04" },
 ];
+
+function Mark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[22px] w-[22px] shrink-0" fill="none" aria-hidden>
+      <path d="M12 3.2 21.2 19.4H2.8Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M0.4 11.6h6.8" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M16.7 11.6 23.6 6.9" stroke="#4B32C3" strokeWidth="1.3" />
+      <path d="M16.7 12 23.6 12" stroke="#2E9E5B" strokeWidth="1.3" />
+      <path d="M16.7 12.4 23.6 17.1" stroke="#A32250" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+function NavItem({ to, label, icon: Icon, end, folio, compact }: (typeof NAV)[number] & { compact?: boolean }) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      aria-label={compact ? label : undefined}
+      className={({ isActive }) =>
+        cn(
+          "flex items-center gap-2.5 rounded-[3px] px-2.5 text-[13px] transition-colors",
+          compact ? "h-8 px-2" : "h-9",
+          isActive
+            ? "bg-ink-900 text-paper-50"
+            : "text-ink-500 hover:bg-ink-900/[0.055] hover:text-ink-900",
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon className="h-[15px] w-[15px] shrink-0" strokeWidth={1.6} />
+          <span className={cn("truncate font-medium", compact ? "hidden sm:inline" : "flex-1")}>{label}</span>
+          {!compact ? (
+            <span className={cn("fac text-[9.5px]", isActive ? "text-paper-50/45" : "text-ink-400/60")}>{folio}</span>
+          ) : null}
+        </>
+      )}
+    </NavLink>
+  );
+}
 
 function Layout() {
   return (
-    <div className="min-h-screen bg-cream-50">
-      <WorkerStatusBanner />
-      <div className="flex">
-        <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-ink-900/10 bg-cream-100/60 px-5 py-7">
-          <div className="px-2">
-            <div
-              className="text-2xl font-bold tracking-tight text-ink-900"
-              title="A human-in-the-loop content automation framework."
-            >
-              Prism
-            </div>
-            <p className="mt-1 text-[11px] leading-snug text-ink-400">
-              Human-in-the-loop
-              <br />
-              content automation
-            </p>
-          </div>
+    <div className="min-h-screen bg-paper-100">
+      <div className="lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-[236px] shrink-0 flex-col border-r border-ink-900/12 px-4 py-5 lg:flex">
+          <NavLink to="/" className="mb-7 flex items-start gap-2.5 px-1 text-ink-900" aria-label="Prism — queue">
+            <Mark />
+            <span className="min-w-0">
+              <span className="block text-[15px] font-semibold leading-tight tracking-[-0.015em]">Prism</span>
+              <span className="mt-0.5 block text-[10.5px] leading-[1.35] text-ink-400">
+                Human-in-the-loop
+                <br />
+                content automation
+              </span>
+            </span>
+          </NavLink>
 
-          <nav className="mt-9 flex flex-col gap-1">
-            {NAV.map(({ to, label, icon: Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                    isActive ? "bg-ink-900 text-cream-50" : "text-ink-500 hover:bg-ink-900/5 hover:text-ink-900",
-                  )
-                }
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </NavLink>
+          <nav className="flex flex-col gap-0.5" aria-label="Sections">
+            {NAV.map((item) => (
+              <NavItem key={item.to} {...item} />
             ))}
           </nav>
 
-          <div className="mt-auto rounded-xl border border-ink-900/10 bg-white/50 p-3 text-[11px] leading-relaxed text-ink-400">
-            Render, review, approve. Nothing publishes itself.
+          <div className="mt-auto flex flex-col gap-3 px-1">
+            <WorkerDot />
+            <div className="rule" />
+            <p className="text-[10.5px] leading-[1.45] text-ink-400">Nothing publishes itself.</p>
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-ink-900/10 bg-cream-50/85 px-8 backdrop-blur">
-            <span className="eyebrow">{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</span>
-            <div className="flex items-center gap-5">
-              <WorkerDot />
-              <Button asChild size="sm" variant="ember">
-                <NavLink to="/new">
-                  <Plus className="h-3.5 w-3.5" /> New job
-                </NavLink>
-              </Button>
-            </div>
-          </header>
-          <main className="mx-auto w-full max-w-[1180px] flex-1 px-8 py-9">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3 border-b border-ink-900/12 px-4 py-3 lg:hidden">
+            <NavLink to="/" className="flex items-center gap-2 text-ink-900" aria-label="Prism — queue">
+              <Mark />
+              <span className="text-[14px] font-semibold tracking-[-0.015em]">Prism</span>
+            </NavLink>
+            <nav className="ml-2 flex items-center gap-1 overflow-x-auto" aria-label="Sections">
+              {NAV.map((item) => (
+                <NavItem key={item.to} {...item} compact />
+              ))}
+            </nav>
+          </div>
+
+          <WorkerStatusBanner />
+
+          <main className="mx-auto w-full max-w-[1240px] px-5 pb-24 pt-7 sm:px-7 lg:px-10 lg:pb-16 lg:pt-9">
             <Outlet />
           </main>
         </div>
       </div>
+
     </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <PlateHeader
+      title="Page not found."
+      meta="That route isn't part of this build. The queue is where the work is."
+      actions={
+        <Button asChild>
+          <NavLink to="/">
+            <Plus className="h-3.5 w-3.5" /> Back to the queue
+          </NavLink>
+        </Button>
+      }
+    />
   );
 }
 
@@ -97,7 +145,7 @@ export default function App() {
         <Route path="review/:jobId" element={<Review />} />
         <Route path="plugins" element={<Plugins />} />
         <Route path="settings" element={<Settings />} />
-        <Route path="*" element={<div className="text-ink-500">Page not found.</div>} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

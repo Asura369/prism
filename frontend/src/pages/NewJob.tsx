@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { api } from "@/api/client";
+import { PlateHeader } from "@/components/Plate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { PluginInfo } from "@/types";
@@ -18,14 +18,16 @@ const STARTERS = [
 
 function AngleSummary({ angle }: { angle: Record<string, unknown> }) {
   return (
-    <div className="rounded-xl border border-ember-500/25 bg-ember-500/5 p-4">
-      <p className="eyebrow text-ember-600">Selected angle</p>
-      <p className="mt-2 text-sm font-semibold text-ink-900">{String(angle.hook ?? "Chosen angle")}</p>
-      {angle.framing ? <p className="mt-1 text-sm leading-relaxed text-ink-500">{String(angle.framing)}</p> : null}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {angle.target_emotion ? <Badge variant="outline">{String(angle.target_emotion)}</Badge> : null}
-        {angle.recommended_plugin ? <Badge variant="ember">{String(angle.recommended_plugin)}</Badge> : null}
+    <div className="border border-ink-900/15 bg-paper-50 p-3.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="fac text-[9.5px]">Selected angle</span>
+        {angle.recommended_plugin ? <Badge variant="outline">{String(angle.recommended_plugin)}</Badge> : null}
       </div>
+      <p className="mt-2 text-[13.5px] font-semibold leading-snug text-ink-900">{String(angle.hook ?? "Chosen angle")}</p>
+      {angle.framing ? <p className="mt-1 text-[12.5px] leading-relaxed text-ink-500">{String(angle.framing)}</p> : null}
+      {angle.target_emotion ? (
+        <p className="mt-2 text-[10.5px] uppercase tracking-[0.08em] text-ink-400">{String(angle.target_emotion)}</p>
+      ) : null}
     </div>
   );
 }
@@ -89,68 +91,81 @@ export default function NewJob() {
   }
 
   return (
-    <div className="flex flex-col gap-7">
-      <div>
-        <p className="eyebrow">New job</p>
-        <h1 className="page-title mt-2">Send a topic through the pipeline</h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-500">
-          The plugin turns your topic into a slide spec, renders a 4:5 deck, writes caption and alt text,
-          then holds it in review.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PlateHeader
+        title="Send a topic through the pipeline"
+        meta="The plugin turns your topic into a slide spec, renders a 4:5 deck, writes caption and alt text, then holds it in review."
+      />
 
-      <div className="grid gap-6 lg:grid-cols-[1.55fr_1fr]">
-        <div className="flex flex-col gap-6">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
           <section>
-            <p className="eyebrow mb-3">1 · Format</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {plugins.map((item) => (
-                <button
-                  key={item.name}
-                  type="button"
-                  onClick={() => choosePlugin(item)}
-                  disabled={!item.available}
-                  className={cn(
-                    "rounded-card border p-4 text-left transition-colors",
-                    item.name === plugin
-                      ? "border-ink-900 bg-white"
-                      : "border-ink-900/10 bg-white/50 hover:border-ink-900/30",
-                    !item.available && "cursor-not-allowed opacity-50",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-ink-900">{item.name.replace("_carousel", "")}</span>
-                    {item.name === plugin && <Check className="h-4 w-4 text-ember-600" />}
-                  </div>
-                  <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{item.description}</p>
-                  {!item.available && (
-                    <p className="mt-2 text-[11px] font-semibold text-red-600">
-                      Missing: {item.missing_adapters.join(", ")}
-                    </p>
-                  )}
-                </button>
-              ))}
-              {!pluginsQuery.isLoading && plugins.length === 0 && (
-                <p className="text-sm text-ink-500">No plugins installed.</p>
-              )}
+            <div className="mb-2.5 flex items-baseline justify-between gap-3">
+              <h2 className="text-[13px] font-semibold text-ink-900">Format</h2>
+              <span className="fac text-[9.5px]">01</span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {plugins.map((item) => {
+                const active = item.name === plugin;
+                return (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => choosePlugin(item)}
+                    disabled={!item.available}
+                    className={cn(
+                      "relative flex flex-col gap-1.5 overflow-hidden rounded-plate border p-3.5 pt-4 text-left transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ink-900/60",
+                      active
+                        ? "border-ink-900 bg-paper-50"
+                        : "border-ink-900/12 bg-paper-50/60 hover:border-ink-900/35",
+                      !item.available && "cursor-not-allowed opacity-45",
+                    )}
+                  >
+                    <span
+                      className={cn("absolute inset-x-0 top-0 h-[3px]", active ? "bg-ink-900" : "bg-transparent")}
+                      aria-hidden
+                    />
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="text-[11.5px] font-semibold uppercase tracking-[0.09em] text-ink-900">
+                        {item.name.replace("_carousel", "")}
+                      </span>
+                      {active ? <span className="fac text-[9px] text-ink-400">selected</span> : null}
+                    </span>
+                    <span className="text-[11.5px] leading-relaxed text-ink-500">{item.description}</span>
+                    {!item.available ? (
+                      <span className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#a32d1b]">
+                        Missing: {item.missing_adapters.join(", ")}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+              {!pluginsQuery.isLoading && plugins.length === 0 ? (
+                <p className="text-[12.5px] text-ink-500">No plugins installed.</p>
+              ) : null}
             </div>
           </section>
 
           <section>
-            <p className="eyebrow mb-3">2 · Topic</p>
+            <div className="mb-2.5 flex items-baseline justify-between gap-3">
+              <h2 className="text-[13px] font-semibold text-ink-900">Topic</h2>
+              <span className="fac text-[9.5px]">02</span>
+            </div>
             <Input
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
               placeholder="What should the deck be about?"
               maxLength={200}
+              className="h-11 text-[14.5px]"
+              aria-label="Topic"
             />
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
               {STARTERS.map((starter) => (
                 <button
                   key={starter}
                   type="button"
                   onClick={() => setTopic(starter)}
-                  className="rounded-full border border-ink-900/10 bg-white/60 px-3 py-1 text-xs text-ink-500 transition-colors hover:border-ink-900/30 hover:text-ink-900"
+                  className="text-left text-[11.5px] text-ink-500 underline decoration-ink-900/20 underline-offset-[3px] transition-colors hover:text-ink-900 hover:decoration-ink-900"
                 >
                   {starter}
                 </button>
@@ -160,15 +175,18 @@ export default function NewJob() {
 
           {angle ? <AngleSummary angle={angle} /> : null}
 
-          <details className="rounded-card border border-ink-900/10 bg-white/50 p-4">
-            <summary className="cursor-pointer text-sm font-semibold text-ink-700">Advanced</summary>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-500">
-                Style preset
+          <details className="group rounded-plate border border-ink-900/12 bg-paper-50/60">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-[12px] font-semibold text-ink-700 transition-colors hover:text-ink-900">
+              Advanced — style preset and seed
+              <span className="text-[11px] text-ink-400 transition-transform group-open:rotate-90 motion-reduce:transition-none">›</span>
+            </summary>
+            <div className="grid gap-4 border-t border-ink-900/10 p-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="label">Style preset</span>
                 <select
                   value={style}
                   onChange={(event) => setStyle(event.target.value)}
-                  className="h-11 rounded-xl border border-ink-900/15 bg-white/80 px-3 text-sm font-normal text-ink-900"
+                  className="h-9 rounded-field border border-ink-900/18 bg-paper-50 px-3 text-[13px] text-ink-900 transition-colors hover:border-ink-900/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ink-900/60"
                 >
                   {styles.map((name) => (
                     <option key={name} value={name}>
@@ -177,8 +195,8 @@ export default function NewJob() {
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-500">
-                Seed (optional)
+              <label className="flex flex-col gap-1.5">
+                <span className="label">Seed (optional)</span>
                 <Input
                   value={seed}
                   onChange={(event) => setSeed(event.target.value.replace(/[^0-9]/g, ""))}
@@ -189,46 +207,43 @@ export default function NewJob() {
             </div>
           </details>
 
-          {error && (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-          )}
+          {error ? (
+            <p className="border border-signal/30 bg-signal/[0.06] px-3.5 py-2.5 text-[12.5px] text-[#a32d1b]">{error}</p>
+          ) : null}
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <Button size="lg" disabled={!canSubmit} onClick={() => mutation.mutate()}>
               {mutation.isPending ? "Queueing…" : "Run pipeline"}
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <p className="text-xs text-ink-400">Jobs run one at a time in the local worker.</p>
+            <p className="text-[11.5px] text-ink-400">Jobs run one at a time in the local worker.</p>
           </div>
         </div>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <p className="eyebrow">Output</p>
-            <CardTitle className="mt-1">What comes back</CardTitle>
-            <CardDescription>
-              A reviewable deck, not a published post.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm">
-            <div className="flex gap-3">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ember-500" />
-              <p className="text-ink-500"><span className="font-semibold text-ink-900">5–10 PNG slides</span> at 1080×1350, safe margins, no overflow.</p>
-            </div>
-            <div className="flex gap-3">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ember-500" />
-              <p className="text-ink-500"><span className="font-semibold text-ink-900">Caption, hashtags, alt text</span> for every slide.</p>
-            </div>
-            <div className="flex gap-3">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ember-500" />
-              <p className="text-ink-500"><span className="font-semibold text-ink-900">Provenance manifest</span> with adapters, prompts, hashes, and sources.</p>
-            </div>
-            <div className="rule my-1" />
-            <p className="text-xs leading-relaxed text-ink-400">
-              No API key? The deterministic FakeLLM adapter runs the whole pipeline and marks the job degraded.
-            </p>
-          </CardContent>
-        </Card>
+        <aside className="rounded-plate border border-ink-900/12 bg-paper-50">
+          <div className="border-b border-ink-900/10 px-4 py-3">
+            <h2 className="text-[13px] font-semibold text-ink-900">What comes back</h2>
+            <p className="mt-0.5 text-[11.5px] text-ink-500">A reviewable deck, not a published post.</p>
+          </div>
+          <div className="flex flex-col">
+            {[
+              ["5–10 PNG slides", "1080 × 1350, safe margins, no overflow."],
+              ["Caption and alt text", "Hashtags per platform, alt text per slide."],
+              ["Provenance manifest", "Adapters, prompts, hashes, and sources."],
+            ].map(([title, body], index) => (
+              <div key={title} className="flex gap-3 border-b border-ink-900/8 px-4 py-3 last:border-0">
+                <span className="fac tnum shrink-0 pt-0.5 text-[9.5px]">{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <p className="text-[12.5px] font-semibold text-ink-900">{title}</p>
+                  <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-500">{body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="border-t border-ink-900/10 px-4 py-3 text-[11px] leading-relaxed text-ink-400">
+            No API key? The deterministic fake adapter runs the whole pipeline and marks the job degraded.
+          </p>
+        </aside>
       </div>
     </div>
   );

@@ -1,5 +1,3 @@
-import { Badge } from "@/components/ui/badge";
-
 function read(value: unknown, path: string[]): unknown {
   let current: unknown = value;
   for (const key of path) {
@@ -30,31 +28,43 @@ export function ProvenancePanel({ manifest }: { manifest: Record<string, unknown
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      {degraded && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          <Badge variant="amber">degraded</Badge>
-          <span>Fallback adapter used: {fallbacks.join(", ") || "unknown"}</span>
+    <div className="flex flex-col gap-3">
+      {degraded ? (
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border border-signal/30 bg-signal/[0.06] px-2.5 py-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#a32d1b]">Degraded</span>
+          <span className="text-[11.5px] text-[#7a2b1c]">
+            Fallback adapter used: {fallbacks.join(", ") || "unknown"}
+          </span>
         </div>
-      )}
-      <div className="flex flex-col gap-2 text-xs">
+      ) : null}
+
+      <dl className="flex flex-col">
         {rows.map(([label, value]) => (
-          <div key={label} className="flex items-start justify-between gap-4 border-b border-ink-900/5 pb-2 last:border-0">
-            <span className="text-ink-400">{label}</span>
-            <span className="text-right font-medium text-ink-900">{value}</span>
+          <div
+            key={label}
+            className="flex items-baseline justify-between gap-4 border-b border-ink-900/8 py-1.5 last:border-0"
+          >
+            <dt className="shrink-0 text-[12px] text-ink-400">{label}</dt>
+            <dd className="min-w-0 truncate text-right text-[12px] font-medium text-ink-900">{value}</dd>
           </div>
         ))}
-      </div>
-      <details className="text-xs">
-        <summary className="cursor-pointer font-semibold text-ink-500">Prompt hashes</summary>
+      </dl>
+
+      <details className="group border-t border-ink-900/10 text-[12px]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 pt-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-400 transition-colors hover:text-ink-900">
+          Prompt hashes
+          <span className="text-[10px] transition-transform group-open:rotate-90 motion-reduce:transition-none">›</span>
+        </summary>
         <div className="mt-2 flex flex-col gap-1 font-mono text-[10px] text-ink-400">
           {Object.entries(hashes).map(([name, hash]) => (
             <div key={name} className="flex justify-between gap-3">
-              <span>{name}</span>
-              <span title={hash}>{hash.slice(0, 16)}…</span>
+              <span className="truncate">{name}</span>
+              <span className="shrink-0" title={hash}>
+                {hash.slice(0, 16)}…
+              </span>
             </div>
           ))}
-          {Object.keys(hashes).length === 0 && <span>none recorded</span>}
+          {Object.keys(hashes).length === 0 ? <span>none recorded</span> : null}
         </div>
       </details>
     </div>

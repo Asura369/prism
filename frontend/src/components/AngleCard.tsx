@@ -1,8 +1,8 @@
 import { ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { DispatchAngle, PluginInfo } from "@/types";
+
+const BANDS = ["bg-spectrum-spec", "bg-spectrum-render", "bg-spectrum-publish"];
 
 export function AngleCard({
   angle,
@@ -20,41 +20,45 @@ export function AngleCard({
   onUse: () => void;
 }) {
   return (
-    <Card className="flex h-full flex-col">
-      <CardContent className="flex flex-1 flex-col gap-4 pt-6">
-        <div className="flex items-center justify-between gap-3">
-          <span className="eyebrow">Angle {index + 1}</span>
-          <Badge variant="outline">{angle.target_emotion || "neutral"}</Badge>
+    <article className="flex h-full flex-col rounded-plate border border-ink-900/12 bg-paper-50">
+      <div className={`h-[3px] w-full ${BANDS[index % BANDS.length]}`} aria-hidden />
+
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="fac tnum text-[10.5px] text-ink-400">{String(index + 1).padStart(2, "0")}</span>
+          <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-500">
+            {angle.target_emotion || "neutral"}
+          </span>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold leading-snug text-ink-900">{angle.hook}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-ink-500">{angle.framing}</p>
+          <h2 className="text-[17px] font-semibold leading-[1.25] tracking-[-0.015em] text-ink-900">
+            {angle.hook}
+          </h2>
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-500">{angle.framing}</p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{angle.format_suggestion}</Badge>
-          <Badge variant="outline">{angle.est_slide_count} slides</Badge>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] uppercase tracking-[0.07em] text-ink-400">
+          <span>{angle.format_suggestion}</span>
+          <span aria-hidden>·</span>
+          <span className="tnum">{angle.est_slide_count} slides</span>
         </div>
 
-        <p className="text-sm leading-relaxed text-ink-500">
-          <span className="font-semibold text-ink-900">Why it works: </span>
+        <p className="text-[12.5px] leading-relaxed text-ink-500">
+          <span className="font-semibold text-ink-900">Why it works </span>
           {angle.why_it_works}
         </p>
 
-        <div className="rounded-xl border border-ink-900/10 bg-cream-100/70 p-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Recommended plugin</p>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <Badge variant="ember">{angle.recommended_plugin}</Badge>
-            <span className="text-[11px] text-ink-400">{angle.plugin_reasoning}</span>
-          </div>
-          <label className="mt-3 flex flex-col gap-1 text-[11px] font-semibold text-ink-500">
-            Use plugin
+        <div className="mt-auto border-t border-ink-900/10 pt-3.5">
+          <span className="fac text-[9.5px]">Route</span>
+          <p className="mt-1 max-w-[46ch] text-[11.5px] leading-relaxed text-ink-500">{angle.plugin_reasoning}</p>
+          <label className="mt-2 flex flex-col gap-1">
+            <span className="sr-only">Plugin for angle {index + 1}</span>
             <select
               value={selectedPlugin}
               onChange={(event) => onPluginChange(event.target.value)}
-              className="h-9 rounded-lg border border-ink-900/15 bg-white px-2 text-sm font-normal text-ink-900"
               aria-label={`Plugin for angle ${index + 1}`}
+              className="h-8 w-full rounded-field border border-ink-900/18 bg-paper-50 px-2.5 text-[12px] font-medium text-ink-900 transition-colors hover:border-ink-900/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ink-900/60"
             >
               {plugins.map((plugin) => (
                 <option key={plugin.name} value={plugin.name} disabled={!plugin.available}>
@@ -65,10 +69,10 @@ export function AngleCard({
           </label>
         </div>
 
-        <Button className="mt-auto w-full" onClick={onUse}>
-          Use this angle <ArrowRight className="h-4 w-4" />
+        <Button className="w-full" onClick={onUse}>
+          Use this angle <ArrowRight className="h-3.5 w-3.5" />
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   );
 }
