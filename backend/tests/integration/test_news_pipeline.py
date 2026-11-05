@@ -8,8 +8,8 @@ import pytest
 from PIL import Image
 
 from prism import db
-from prism.adapters.llm.fake import NEWS_SETS, FakeLLM
-from prism.adapters.news.fake import FakeNews
+from prism.adapters.llm.stub import NEWS_SETS, StubLLM
+from prism.adapters.news.stub import StubNews
 from prism.adapters.resolver import AdapterResolver
 from prism.config import Config, Secrets
 from prism.domain import Job, JobStatus
@@ -36,7 +36,7 @@ def _news_job() -> Job:
 
 
 def test_news_pipeline_end_to_end(cfg: Config, secrets: Secrets):
-    secrets.fake_adapters = True
+    secrets.stub_adapters = True
     db.init_db(cfg.run.db_path)
     conn = db.connect(cfg.run.db_path)
     job = _news_job()
@@ -70,17 +70,17 @@ def test_news_pipeline_end_to_end(cfg: Config, secrets: Secrets):
                 assert img.size == (1080, 1350)
 
 
-class _OneArticleNews(FakeNews):
+class _OneArticleNews(StubNews):
     def fetch_articles(self, *, query, max_articles, language="en"):
         return super().fetch_articles(query=query, max_articles=1)
 
 
-class _FailingNews(FakeNews):
+class _FailingNews(StubNews):
     def fetch_articles(self, *, query, max_articles, language="en"):
         raise RuntimeError("news feed unreachable")
 
 
-class _BlockedLLM(FakeLLM):
+class _BlockedLLM(StubLLM):
     def complete(self, prompt, **kwargs):
         if '"news_points"' in prompt:
             payload = json.loads(json.dumps(NEWS_SETS[0]))
@@ -104,10 +104,10 @@ def _failure_manifest(cfg: Config, job: Job) -> dict:
 
 
 def test_insufficient_sources_fails_the_job(cfg, secrets):
-    secrets.fake_adapters = True
+    secrets.stub_adapters = True
     job = _news_job()
     orch = _orchestrator(cfg, secrets, job)
-    orch.resolver._registry["news"]["fake"] = _OneArticleNews()
+    orch.resolver._registry["news"]["stub"] = _OneArticleNews()
     with pytest.raises(InsufficientSourcesError) as exc:
         orch.run()
     assert (exc.value.context["found"], exc.value.context["required"]) == (1, 2)
@@ -119,10 +119,10 @@ def test_insufficient_sources_fails_the_job(cfg, secrets):
 
 
 def test_news_adapter_failure_is_recorded_in_the_manifest(cfg, secrets):
-    secrets.fake_adapters = True
+    secrets.stub_adapters = True
     job = _news_job()
     orch = _orchestrator(cfg, secrets, job)
-    orch.resolver._registry["news"]["fake"] = _FailingNews()
+    orch.resolver._registry["news"]["stub"] = _FailingNews()
     with pytest.raises(InsufficientSourcesError) as exc:
         orch.run()
     assert exc.value.context["found"] == 0
@@ -131,15 +131,15 @@ def test_news_adapter_failure_is_recorded_in_the_manifest(cfg, secrets):
     assert failed["status"] == "FAILED"
     assert "ingest" not in failed
     assert isinstance(failed["ingest_errors"], list) and failed["ingest_errors"]
-    assert failed["ingest_errors"][0]["adapter"] == "fake"
+    assert failed["ingest_errors"][0]["adapter"] == "stub"
     assert failed["ingest_errors"][0]["error"]
 
 
 def test_blocked_topic_fails_policy(cfg, secrets):
-    secrets.fake_adapters = True
+    secrets.stub_adapters = True
     job = _news_job()
     orch = _orchestrator(cfg, secrets, job)
-    orch.resolver._registry["llm"]["fake"] = _BlockedLLM()
+    orch.resolver._registry["llm"]["stub"] = _BlockedLLM()
     with pytest.raises(PolicyViolation):
         orch.run()
     failed = _failure_manifest(cfg, job)

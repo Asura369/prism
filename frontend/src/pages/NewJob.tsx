@@ -241,7 +241,7 @@ export default function NewJob() {
             ))}
           </div>
           <p className="border-t border-ink-900/10 px-4 py-3 text-[11px] leading-relaxed text-ink-400">
-            No API key? The deterministic fake adapter runs the whole pipeline and marks the job degraded.
+            No API key? The deterministic stub adapter runs the whole pipeline and marks the job degraded.
           </p>
         </aside>
       </div>

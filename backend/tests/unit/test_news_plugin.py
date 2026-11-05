@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from prism.adapters.llm.fake import NEWS_SETS
+from prism.adapters.llm.stub import NEWS_SETS
 from prism.domain import SlideSpec
 from prism.render.slides import load_style, render_slide
 

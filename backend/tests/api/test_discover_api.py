@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from prism.adapters.llm.fake import ANGLES
+from prism.adapters.llm.stub import ANGLES
 from prism.config import Config, Secrets
 from prism.discovery import service
 from prism.domain import TrendCandidate
@@ -13,7 +13,7 @@ from prism.main import create_app
 
 
 def _client(cfg: Config) -> TestClient:
-    secrets = Secrets(fake_adapters=True)
+    secrets = Secrets(stub_adapters=True)
     return TestClient(create_app(cfg, secrets))
 
 
@@ -29,7 +29,7 @@ def _candidate() -> TrendCandidate:
     )
 
 
-class FakeSource:
+class StubSource:
     name = "google_news_rss"
 
     def fetch(self, *, region, limit, window_h):
@@ -37,7 +37,7 @@ class FakeSource:
 
 
 def test_trends_endpoint_returns_scored_candidates(cfg: Config, monkeypatch):
-    monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": FakeSource()})
+    monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": StubSource()})
     with _client(cfg) as client:
         response = client.get("/api/discover/trends?region=US&window_h=24")
         assert response.status_code == 200

@@ -77,7 +77,7 @@ def test_scoring_is_normalized_and_hard_filters_unsafe(cfg: Config):
     assert 0 <= combine(candidate, safety=0.9, visual=0.8, angle=0.8, saturation=0.2, cfg=cfg) <= 1
 
     class LowSafetyLLM:
-        name = "fake"
+        name = "stub"
 
         def complete(self, prompt: str, **_):
             ids = [part.split("\n")[0] for part in prompt.split("candidate_id=")[1:]]
@@ -104,7 +104,7 @@ def test_scoring_is_normalized_and_hard_filters_unsafe(cfg: Config):
             return [self.llm] if interface == "llm" else []
 
         def complete(self, prompt, *, json_schema=None):
-            return Completion(self.llm.complete(prompt), "fake", "fake", [])
+            return Completion(self.llm.complete(prompt), "stub", "stub", [])
 
     safe = _candidate("a", "Safe topic")
     unsafe = _candidate("b", "Unsafe topic")
@@ -157,15 +157,15 @@ def test_trends_cache_avoids_second_network_call(cfg: Config, monkeypatch):
     conn = db.connect(cfg.run.db_path)
     calls = {"n": 0}
 
-    class FakeSource:
+    class StubSource:
         name = "google_news_rss"
 
         def fetch(self, *, region, limit, window_h):
             calls["n"] += 1
             return [_candidate("gn:1", "Cached topic", "google_news_rss", 1.0)]
 
-    monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": FakeSource()})
-    secrets = Secrets(fake_adapters=True)
+    monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": StubSource()})
+    secrets = Secrets(stub_adapters=True)
     from prism.adapters.resolver import AdapterResolver
 
     resolver = AdapterResolver(cfg, secrets)
@@ -187,7 +187,7 @@ def test_source_failure_is_isolated(cfg: Config, monkeypatch):
             raise RuntimeError("network down")
 
     monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": BrokenSource()})
-    secrets = Secrets(fake_adapters=True)
+    secrets = Secrets(stub_adapters=True)
     from prism.adapters.resolver import AdapterResolver
 
     result = service.fetch_trends(cfg, conn, AdapterResolver(cfg, secrets), region="US", window_h=24)

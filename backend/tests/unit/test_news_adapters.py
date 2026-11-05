@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import httpx
 
-from prism.adapters.news.fake import FakeNews
+from prism.adapters.news.stub import StubNews
 from prism.adapters.news.google_news import GoogleNewsRSSNews
 from prism.adapters.resolver import AdapterResolver
 from prism.config import Config, Secrets
@@ -24,22 +24,22 @@ RSS_XML = """<?xml version="1.0"?><rss version="2.0"><channel>
 </channel></rss>"""
 
 
-def test_fake_news_is_deterministic_with_unique_urls():
-    first = FakeNews().fetch_articles(query="deep sea mining", max_articles=5)
-    assert first == FakeNews().fetch_articles(query="deep sea mining", max_articles=5)
+def test_stub_news_is_deterministic_with_unique_urls():
+    first = StubNews().fetch_articles(query="deep sea mining", max_articles=5)
+    assert first == StubNews().fetch_articles(query="deep sea mining", max_articles=5)
     assert len(first) == 4
     assert len({a["url"] for a in first}) == 4
     assert all(set(a) == {"title", "url", "snippet", "published_at", "source_name"} for a in first)
 
 
-def test_fake_news_respects_max_articles():
-    assert len(FakeNews().fetch_articles(query="x", max_articles=2)) == 2
+def test_stub_news_respects_max_articles():
+    assert len(StubNews().fetch_articles(query="x", max_articles=2)) == 2
 
 
-def test_fake_news_returns_independent_articles():
-    first = FakeNews().fetch_articles(query="x", max_articles=5)
+def test_stub_news_returns_independent_articles():
+    first = StubNews().fetch_articles(query="x", max_articles=5)
     first[0]["title"] = "mutated"
-    assert FakeNews().fetch_articles(query="x", max_articles=5)[0]["title"] != "mutated"
+    assert StubNews().fetch_articles(query="x", max_articles=5)[0]["title"] != "mutated"
 
 
 def test_google_news_news_parses_rss():
@@ -89,6 +89,6 @@ def test_news_chain_real(cfg: Config, secrets: Secrets):
     assert AdapterResolver(cfg, secrets).chain_names("news") == ["google_news_rss"]
 
 
-def test_news_chain_fake(cfg: Config, secrets: Secrets):
-    secrets.fake_adapters = True
-    assert AdapterResolver(cfg, secrets).chain_names("news") == ["fake"]
+def test_news_chain_stub(cfg: Config, secrets: Secrets):
+    secrets.stub_adapters = True
+    assert AdapterResolver(cfg, secrets).chain_names("news") == ["stub"]

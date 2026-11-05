@@ -315,8 +315,8 @@ class Orchestrator:
         self.manifest["status"] = "REVIEW_READY"
         self.manifest["finished_at"] = db.iso(db.now_utc())
         self.manifest["adapters"]["llm"] = {
-            "name": self.llm_adapter_name or "fake",
-            "model": self.llm_model or "fake",
+            "name": self.llm_adapter_name or "stub",
+            "model": self.llm_model or "stub",
         }
 
         metadata = self._metadata_json()

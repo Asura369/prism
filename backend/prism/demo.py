@@ -12,7 +12,7 @@ from .plugins.registry import PluginRegistry
 
 def main() -> int:
     cfg = load_config()
-    secrets = Secrets(fake_adapters=True)
+    secrets = Secrets(stub_adapters=True)
     db_path = resolve_path(cfg.run.db_path, cfg.base_dir)
     db.init_db(db_path)
     conn = db.connect(db_path)
@@ -22,7 +22,7 @@ def main() -> int:
     if not plugins:
         print("No plugins installed.")
         return 1
-    print(f"Running demo for {len(plugins)} plugin(s) with FakeLLM…")
+    print(f"Running demo for {len(plugins)} plugin(s) with StubLLM…")
     for plugin_name in plugins:
         job_id = "demo_" + uuid.uuid4().hex[:10]
         seed = abs(hash(plugin_name)) % 2_147_483_647

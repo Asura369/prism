@@ -27,7 +27,7 @@ def cfg(tmp_path: Path) -> Config:
 
 @pytest.fixture
 def secrets() -> Secrets:
-    return Secrets(fake_adapters=False)
+    return Secrets(stub_adapters=False)
 
 
 @pytest.fixture
@@ -56,14 +56,14 @@ def faq_plugin(cfg: Config) -> FaqCarouselPlugin:
 
 @pytest.fixture
 def facts_payload() -> dict:
-    from prism.adapters.llm.fake import FACTS_SETS
+    from prism.adapters.llm.stub import FACTS_SETS
 
     return json.loads(json.dumps(FACTS_SETS[0]))
 
 
 @pytest.fixture
 def faq_payload() -> dict:
-    from prism.adapters.llm.fake import FAQ_SETS
+    from prism.adapters.llm.stub import FAQ_SETS
 
     return json.loads(json.dumps(FAQ_SETS[0]))
 

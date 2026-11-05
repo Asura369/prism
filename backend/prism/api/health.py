@@ -39,6 +39,6 @@ def settings(request: Request):
         },
         "adapters": resolver.availability(),
         "styles": resolver.style_names(),
-        "fake_adapters": secrets.fake_adapters,
+        "stub_adapters": secrets.stub_adapters,
     }
 

@@ -40,7 +40,7 @@ metadata and approve or reject it.
 </p>
 
 One generated `news_carousel` deck (1080×1350 each), from `make demo`: a cover,
-a sourced news point, and the attribution slide. These are deterministic FakeLLM
+a sourced news point, and the attribution slide. These are deterministic StubLLM
 renders, so the sources slide reads `example.news` rather than live links.
 Regenerate them any time with `make demo` and look in `review/<job_id>/slides/`.
 
@@ -76,11 +76,11 @@ Runtime output is gitignored: `data/` (SQLite), `review/` (decks and metadata),
 
 | Interface | Default | Fallbacks |
 |---|---|---|
-| LLM | `openai_compat` (any OpenAI-compatible provider) | `fake` |
+| LLM | `openai_compat` (any OpenAI-compatible provider) | `stub` |
 | Card renderer | `templated` (Pillow + Inter) | — |
 | Export | `zip` | — |
 | Trend sources | Google News RSS, Hacker News, Trends CSV, manual | soft-fail per source |
-| News sources | `google_news_rss` | `fake` when the fake adapters are on (tests, demo) |
+| News sources | `google_news_rss` | `stub` when the stub adapters are on (tests, demo) |
 
 Providers are plugins: `backend/prism/providers/*/manifest.yaml` declares the base URL,
 model, and request quirks (`json_mode`, `headers`, `extra_body`, token-parameter naming).
@@ -107,7 +107,7 @@ job fails silently.
 
 | Symptom | Error / response | What you see, what to do |
 |---|---|---|
-| No provider configured, or the provider is down | `fake` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Red "Degraded" note on the Review provenance panel; configure a provider in Settings. |
+| No provider configured, or the provider is down | `stub` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Red "Degraded" note on the Review provenance panel; configure a provider in Settings. |
 | Candidate fails the safety filter | `unsafe_candidate` (HTTP 400) on manual entry; auto-discovered candidates are dropped | Nothing is queued; rephrase the topic or title. |
 | Spec breaks the plugin schema | one re-prompt, then `SpecValidationError` | Job FAILED at `spec`; retry the job. |
 | News run finds fewer articles than `min_sources` | `InsufficientSourcesError(found, required)` | Job FAILED at `ingest`; a failing adapter is recorded in `manifest.ingest_errors` — widen the topic or adjust `min_sources`. |
@@ -126,7 +126,7 @@ serializes to `{error_class, stage, message, retryable, context}`.
 
 ## Demo
 
-`make demo` runs all three plugins with the deterministic fakes — no key, no
+`make demo` runs all three plugins with the deterministic stubs — no key, no
 network — and writes one artifact per plugin to `review/<job_id>/`. The decks
 then sit in the review queue.
 
@@ -139,7 +139,7 @@ make test-frontend # typecheck + vitest only
 ```
 
 Both suites run offline: tests use a temp database with no provider configured, so the
-deterministic fake takes over. No API key, no `.env`, no network. There is no CI
+deterministic stub takes over. No API key, no `.env`, no network. There is no CI
 configuration; run `make test` locally before committing.
 
 ## Scope and non-goals

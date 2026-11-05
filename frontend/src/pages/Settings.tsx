@@ -46,13 +46,13 @@ export default function Settings() {
               <span className="font-mono text-ink-700">{llm.model}</span>
             </>
           ) : (
-            <>No provider active. Jobs run on the deterministic fake until you set one up.</>
+            <>No provider active. Jobs run on the deterministic stub until you set one up.</>
           )}
         </p>
 
-        {settings.data?.fake_adapters ? (
+        {settings.data?.stub_adapters ? (
           <p className="mb-3 border border-spectrum-policy/35 bg-spectrum-policy/[0.07] px-3 py-2 text-[11.5px] text-[#7c4a12]">
-            Fake adapters are on. Every LLM call uses the deterministic fake, whatever is configured below.
+            Stub adapters are on. Every LLM call uses the deterministic stub, whatever is configured below.
           </p>
         ) : null}
 
@@ -132,7 +132,7 @@ export default function Settings() {
             })}
           </div>
           <p className="mt-3 max-w-[70ch] text-[11.5px] leading-relaxed text-ink-400">
-            A missing key makes the chain fall through to <code className="font-mono text-[11px]">fake</code> and marks
+            A missing key makes the chain fall through to <code className="font-mono text-[11px]">stub</code> and marks
             the job degraded rather than failing it.
           </p>
         </section>

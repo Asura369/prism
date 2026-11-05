@@ -134,9 +134,9 @@ class Config(_Model):
 
 @dataclass
 class Secrets:
-    """The one runtime switch left: force the deterministic fake adapters."""
+    """The one runtime switch left: force the deterministic stub adapters."""
 
-    fake_adapters: bool = False
+    stub_adapters: bool = False
 
 
 def _config_path(explicit: Path | None = None) -> Path | None:

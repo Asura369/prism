@@ -14,7 +14,7 @@ from prism.orchestrator import Orchestrator
 
 
 def _app_client(cfg: Config):
-    secrets = Secrets(fake_adapters=True)
+    secrets = Secrets(stub_adapters=True)
     app = create_app(cfg, secrets)
     return app, TestClient(app)
 

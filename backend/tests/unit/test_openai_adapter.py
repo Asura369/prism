@@ -8,7 +8,7 @@ from prism.adapters.llm.openai import OpenAIAdapter
 from prism.config import OpenAICompatConfig
 
 
-class _FakeCompletions:
+class _StubCompletions:
     def __init__(self, content: str, finish_reason: str = "stop"):
         self.content = content
         self.finish_reason = finish_reason
@@ -26,9 +26,9 @@ class _FakeCompletions:
         )
 
 
-class _FakeClient:
+class _StubClient:
     def __init__(self, content: str, finish_reason: str = "stop"):
-        self.completions = _FakeCompletions(content, finish_reason)
+        self.completions = _StubCompletions(content, finish_reason)
         self.chat = SimpleNamespace(completions=self.completions)
 
 
@@ -37,14 +37,14 @@ def _adapter(
     base_url: str = "https://api.example.com/v1",
     finish_reason: str = "stop",
     extra_body: dict | None = None,
-) -> tuple[OpenAIAdapter, _FakeClient]:
+) -> tuple[OpenAIAdapter, _StubClient]:
     cfg = OpenAICompatConfig(
         base_url=base_url,
         model="test-model",
         extra_body=extra_body or {},
     )
     adapter = OpenAIAdapter(cfg, api_key="sk-test")
-    client = _FakeClient(content, finish_reason)
+    client = _StubClient(content, finish_reason)
     adapter._client = client
     return adapter, client
 

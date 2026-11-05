@@ -10,9 +10,9 @@ from ..providers.config import effective_llm
 from .base import BaseAdapter, CardRendererAdapter
 from .cards.templated import TemplatedCardRenderer
 from .assembly.zip import ZipExportAdapter
-from .llm.fake import FakeLLM
+from .llm.stub import StubLLM
 from .llm.openai import OpenAIAdapter
-from .news.fake import FakeNews
+from .news.stub import StubNews
 from .news.google_news import GoogleNewsRSSNews
 
 INTERFACES = ("llm", "cards", "export", "news")
@@ -33,7 +33,7 @@ class AdapterResolver:
         self.cfg = cfg
         self.secrets = secrets or get_secrets()
         self.db_path = db_path
-        self._llm_name = "fake"
+        self._llm_name = "stub"
         self._registry: dict[str, dict[str, BaseAdapter]] = {
             "llm": {},
             "cards": {
@@ -44,23 +44,23 @@ class AdapterResolver:
             },
             "news": {
                 "google_news_rss": GoogleNewsRSSNews(),
-                "fake": FakeNews(),
+                "stub": StubNews(),
             },
         }
         self.refresh_llm()
-        if self.secrets.fake_adapters:
-            self._registry["news"] = {"fake": self._registry["news"]["fake"]}
+        if self.secrets.stub_adapters:
+            self._registry["news"] = {"stub": self._registry["news"]["stub"]}
 
     def refresh_llm(self) -> None:
         """Rebuild the LLM adapter from the stored provider; called per job and after writes."""
-        effective = None if self.secrets.fake_adapters else effective_llm(self.db_path)
+        effective = None if self.secrets.stub_adapters else effective_llm(self.db_path)
         if effective is None:
-            self._llm_name = "fake"
-            self._registry["llm"] = {"fake": FakeLLM()}
+            self._llm_name = "stub"
+            self._registry["llm"] = {"stub": StubLLM()}
             return
         adapter = OpenAIAdapter(effective.config, api_key=effective.api_key, name=effective.provider)
         self._llm_name = effective.provider
-        self._registry["llm"] = {effective.provider: adapter, "fake": FakeLLM()}
+        self._registry["llm"] = {effective.provider: adapter, "stub": StubLLM()}
 
     @property
     def llm_name(self) -> str:
@@ -68,10 +68,10 @@ class AdapterResolver:
         return self._llm_name
 
     def chain_names(self, interface: str) -> list[str]:
-        if interface in ("llm", "news") and self.secrets.fake_adapters:
-            return ["fake"]
+        if interface in ("llm", "news") and self.secrets.stub_adapters:
+            return ["stub"]
         if interface == "llm":
-            names = [self._llm_name] if self._llm_name == "fake" else [self._llm_name, "fake"]
+            names = [self._llm_name] if self._llm_name == "stub" else [self._llm_name, "stub"]
             return list(dict.fromkeys(names))
         if interface == "cards":
             return [self.cfg.adapters.cards.default]

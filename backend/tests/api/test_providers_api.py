@@ -62,7 +62,7 @@ def test_saving_a_key_ignores_tampered_endpoints(cfg: Config):
 
 def test_activate_switches_the_resolver(cfg: Config):
     with _client(cfg) as client:
-        assert client.app.state.resolver.llm_name == "fake"
+        assert client.app.state.resolver.llm_name == "stub"
 
         client.put("/api/providers/deepseek", json={"api_key": KEY})
         activated = client.post("/api/providers/deepseek/activate")
@@ -79,7 +79,7 @@ def test_activate_switches_the_resolver(cfg: Config):
         assert deleted.status_code == 200
         assert deleted.json()["configured"] is False and deleted.json()["key_set"] is False
         assert client.get("/api/settings").json()["llm"]["provider"] is None
-        assert client.app.state.resolver.llm_name == "fake"
+        assert client.app.state.resolver.llm_name == "stub"
 
         again = client.post("/api/providers/deepseek/activate")
         assert again.status_code == 409
@@ -97,10 +97,10 @@ def test_test_endpoint_validates_without_saving(cfg: Config, monkeypatch):
 
     calls: list[dict] = []
 
-    def fake_probe(desc, *, key):
+    def stub_probe(desc, *, key):
         calls.append({"provider": desc.name, "key": key})
 
-    monkeypatch.setattr(providers_api, "probe", fake_probe)
+    monkeypatch.setattr(providers_api, "probe", stub_probe)
     with _client(cfg) as client:
         ok = client.post("/api/providers/openai/test", json={"api_key": KEY})
         assert ok.status_code == 200
@@ -118,11 +118,11 @@ def test_test_endpoint_validates_without_saving(cfg: Config, monkeypatch):
 def test_test_endpoint_reports_auth_failure_without_the_key(cfg: Config, monkeypatch):
     import prism.api.providers as providers_api
 
-    class FakeAuthError(Exception):
+    class StubAuthError(Exception):
         status_code = 401
 
     def boom(desc, *, key):
-        raise FakeAuthError(f"bad key {key}")
+        raise StubAuthError(f"bad key {key}")
 
     monkeypatch.setattr(providers_api, "probe", boom)
     with _client(cfg) as client:

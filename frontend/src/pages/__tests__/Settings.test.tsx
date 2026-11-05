@@ -24,7 +24,7 @@ const settings: SettingsResponse = {
   llm: { provider: "opencode_go", model: "deepseek-v4.1-flash", base_url: "https://gw/v1", key_set: true },
   adapters: { llm: [{ name: "opencode_go", available: true }] },
   styles: ["slate"],
-  fake_adapters: false,
+  stub_adapters: false,
 };
 
 function provider(overrides: Partial<ProviderInfo>): ProviderInfo {

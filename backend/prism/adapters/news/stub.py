@@ -36,8 +36,8 @@ ARTICLES: list[dict[str, Any]] = [
 ]
 
 
-class FakeNews(NewsSourceAdapter):
-    name = "fake"
+class StubNews(NewsSourceAdapter):
+    name = "stub"
 
     def fetch_articles(self, *, query: str, max_articles: int, language: str = "en") -> list[dict[str, Any]]:
         return [dict(article) for article in ARTICLES[:max_articles]]

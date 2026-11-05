@@ -31,7 +31,7 @@ def _job() -> Job:
 
 
 def test_faq_pipeline_end_to_end(cfg: Config, secrets: Secrets):
-    secrets.fake_adapters = True
+    secrets.stub_adapters = True
     db.init_db(cfg.run.db_path)
     conn = db.connect(cfg.run.db_path)
     job = _job()
@@ -78,7 +78,7 @@ def test_faq_pipeline_end_to_end(cfg: Config, secrets: Secrets):
     assert manifest["status"] == "REVIEW_READY"
     assert manifest["plugin"] == "faq_carousel"
     assert manifest["error"] is None
-    assert manifest["adapters"]["llm"]["name"] == "fake"
+    assert manifest["adapters"]["llm"]["name"] == "stub"
 
     row = db.get_job(conn, job.job_id)
     assert row is not None

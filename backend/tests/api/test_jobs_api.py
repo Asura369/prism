@@ -12,7 +12,7 @@ from prism.main import create_app
 
 
 def _client(cfg: Config) -> TestClient:
-    secrets = Secrets(fake_adapters=True)
+    secrets = Secrets(stub_adapters=True)
     return TestClient(create_app(cfg, secrets))
 
 
@@ -100,4 +100,4 @@ def test_settings_never_exposes_a_key(cfg: Config):
         assert "keys" not in body
         assert body["llm"]["provider"] is None
         assert body["llm"]["key_set"] is False
-        assert [item["name"] for item in body["adapters"]["llm"]] == ["fake"]
+        assert [item["name"] for item in body["adapters"]["llm"]] == ["stub"]
