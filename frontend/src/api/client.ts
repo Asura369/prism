@@ -63,6 +63,11 @@ export const api = {
   plugins: () => request<PluginInfo[]>("/plugins"),
   settings: () => request<SettingsResponse>("/settings"),
   providers: () => request<ProviderInfo[]>("/providers"),
+  setStubOnly: (enabled: boolean) =>
+    request<{ stub_only: boolean }>("/settings/stub-only", {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    }),
   saveProvider: (id: string, draft: ProviderDraft) =>
     request<ProviderInfo>(`/providers/${id}`, { method: "PUT", body: JSON.stringify(draft) }),
   deleteProviderKey: (id: string) =>

@@ -7,7 +7,7 @@ from PIL import Image
 
 from prism import db
 from prism.adapters.resolver import AdapterResolver
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.domain import Job, JobStatus
 from prism.orchestrator import Orchestrator
 from prism.plugins.registry import PluginRegistry
@@ -30,13 +30,12 @@ def _job() -> Job:
     )
 
 
-def test_faq_pipeline_end_to_end(cfg: Config, secrets: Secrets):
-    secrets.stub_adapters = True
+def test_faq_pipeline_end_to_end(cfg: Config):
     db.init_db(cfg.run.db_path)
     conn = db.connect(cfg.run.db_path)
     job = _job()
     db.insert_job(conn, job, seed=42)
-    resolver = AdapterResolver(cfg, secrets)
+    resolver = AdapterResolver(cfg, stub_only=True)
     registry = PluginRegistry(cfg, resolver)
     assert "faq_carousel" in registry.names()
     info = registry.get_info("faq_carousel")

@@ -11,7 +11,7 @@ from prism import db
 from prism.adapters.llm.stub import NEWS_SETS, StubLLM
 from prism.adapters.news.stub import StubNews
 from prism.adapters.resolver import AdapterResolver
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.domain import Job, JobStatus
 from prism.errors import InsufficientSourcesError, PolicyViolation
 from prism.orchestrator import Orchestrator
@@ -35,13 +35,12 @@ def _news_job() -> Job:
     )
 
 
-def test_news_pipeline_end_to_end(cfg: Config, secrets: Secrets):
-    secrets.stub_adapters = True
+def test_news_pipeline_end_to_end(cfg: Config):
     db.init_db(cfg.run.db_path)
     conn = db.connect(cfg.run.db_path)
     job = _news_job()
     db.insert_job(conn, job, seed=7)
-    resolver = AdapterResolver(cfg, secrets)
+    resolver = AdapterResolver(cfg, stub_only=True)
     registry = PluginRegistry(cfg, resolver)
     orch = Orchestrator(cfg, resolver, registry, conn, job, seed=7)
     artifact = orch.run()
@@ -89,11 +88,11 @@ class _BlockedLLM(StubLLM):
         return super().complete(prompt, **kwargs)
 
 
-def _orchestrator(cfg, secrets, job):
+def _orchestrator(cfg, job):
     db.init_db(cfg.run.db_path)
     conn = db.connect(cfg.run.db_path)
     db.insert_job(conn, job, seed=7)
-    resolver = AdapterResolver(cfg, secrets)
+    resolver = AdapterResolver(cfg, stub_only=True)
     registry = PluginRegistry(cfg, resolver)
     return Orchestrator(cfg, resolver, registry, conn, job, seed=7)
 
@@ -103,10 +102,9 @@ def _failure_manifest(cfg: Config, job: Job) -> dict:
     return json.loads(path.read_text())
 
 
-def test_insufficient_sources_fails_the_job(cfg, secrets):
-    secrets.stub_adapters = True
+def test_insufficient_sources_fails_the_job(cfg):
     job = _news_job()
-    orch = _orchestrator(cfg, secrets, job)
+    orch = _orchestrator(cfg, job)
     orch.resolver._registry["news"]["stub"] = _OneArticleNews()
     with pytest.raises(InsufficientSourcesError) as exc:
         orch.run()
@@ -118,10 +116,9 @@ def test_insufficient_sources_fails_the_job(cfg, secrets):
     assert "ingest" not in failed
 
 
-def test_news_adapter_failure_is_recorded_in_the_manifest(cfg, secrets):
-    secrets.stub_adapters = True
+def test_news_adapter_failure_is_recorded_in_the_manifest(cfg):
     job = _news_job()
-    orch = _orchestrator(cfg, secrets, job)
+    orch = _orchestrator(cfg, job)
     orch.resolver._registry["news"]["stub"] = _FailingNews()
     with pytest.raises(InsufficientSourcesError) as exc:
         orch.run()
@@ -135,10 +132,9 @@ def test_news_adapter_failure_is_recorded_in_the_manifest(cfg, secrets):
     assert failed["ingest_errors"][0]["error"]
 
 
-def test_blocked_topic_fails_policy(cfg, secrets):
-    secrets.stub_adapters = True
+def test_blocked_topic_fails_policy(cfg):
     job = _news_job()
-    orch = _orchestrator(cfg, secrets, job)
+    orch = _orchestrator(cfg, job)
     orch.resolver._registry["llm"]["stub"] = _BlockedLLM()
     with pytest.raises(PolicyViolation):
         orch.run()

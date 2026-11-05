@@ -9,11 +9,23 @@ from ..config import OpenAICompatConfig
 from .registry import ProviderDescriptor, ProviderRegistry
 
 ACTIVE_KEY = "llm.active_provider"
+STUB_ONLY_KEY = "testing.stub_only"
 LLM_TIMEOUT_S = 60
 
 
 def secret_name(provider_id: str) -> str:
     return f"provider.{provider_id}.api_key"
+
+
+def stub_only_enabled(db_path: str | Path | None = None) -> bool:
+    """Testing mode: every job runs on the deterministic stub adapters, no API calls."""
+    if db_path is None:
+        return False
+    conn = db.connect(db_path)
+    try:
+        return db.get_setting(conn, STUB_ONLY_KEY) == "1"
+    finally:
+        conn.close()
 
 
 @lru_cache(maxsize=1)

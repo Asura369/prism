@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from . import db
 from .adapters.resolver import AdapterResolver
 from .api import discover, health, jobs, plugins, providers, review
-from .config import Config, Secrets, get_secrets, load_config, resolve_path
+from .config import Config, load_config, resolve_path
 from .errors import AdapterUnavailable, ConfigError, JobNotFound, PrismError
 from .plugins.registry import PluginRegistry
 
@@ -20,9 +20,8 @@ log = logging.getLogger("prism.api")
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def create_app(cfg: Config | None = None, secrets: Secrets | None = None) -> FastAPI:
+def create_app(cfg: Config | None = None, *, stub_only: bool | None = None) -> FastAPI:
     cfg = cfg or load_config()
-    secrets = secrets or get_secrets()
     db_path = resolve_path(cfg.run.db_path, cfg.base_dir)
     review_path = resolve_path(cfg.run.output_dir, cfg.base_dir)
     work_path = resolve_path(cfg.run.work_dir, cfg.base_dir)
@@ -30,12 +29,11 @@ def create_app(cfg: Config | None = None, secrets: Secrets | None = None) -> Fas
         path.mkdir(parents=True, exist_ok=True)
     db.init_db(db_path)
 
-    resolver = AdapterResolver(cfg, secrets, db_path=str(db_path))
+    resolver = AdapterResolver(cfg, db_path=str(db_path), stub_only=stub_only)
     registry = PluginRegistry(cfg, resolver)
 
     app = FastAPI(title="Prism", version="0.1.0")
     app.state.cfg = cfg
-    app.state.secrets = secrets
     app.state.db_path = db_path
     app.state.review_path = review_path
     app.state.resolver = resolver

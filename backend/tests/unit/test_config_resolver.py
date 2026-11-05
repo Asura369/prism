@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from prism.adapters.resolver import AdapterResolver
-from prism.config import Config, Secrets, load_config
+from prism.config import Config, load_config
 
 
 def test_defaults_are_sane():
@@ -24,8 +24,7 @@ def test_resolver_without_a_configured_provider_uses_stub(cfg: Config):
     from prism import db
 
     db.init_db(cfg.run.db_path)
-    secrets = Secrets()
-    resolver = AdapterResolver(cfg, secrets, db_path=cfg.run.db_path)
+    resolver = AdapterResolver(cfg, db_path=cfg.run.db_path)
     chain = resolver.resolve("llm")
     assert [a.name for a in chain] == ["stub"]
     completion = resolver.complete("hello")
@@ -34,13 +33,20 @@ def test_resolver_without_a_configured_provider_uses_stub(cfg: Config):
     assert completion.failures == []
 
 
-def test_resolver_stub_adapters_flag_forces_stub(cfg: Config):
+def test_stub_only_setting_beats_a_configured_provider(cfg: Config):
     from prism import db
+    from prism.providers.config import ACTIVE_KEY, STUB_ONLY_KEY, secret_name
 
     db.init_db(cfg.run.db_path)
-    secrets = Secrets(stub_adapters=True)
-    resolver = AdapterResolver(cfg, secrets, db_path=cfg.run.db_path)
+    conn = db.connect(cfg.run.db_path)
+    db.set_secret(conn, secret_name("deepseek"), "sk-db")
+    db.set_setting(conn, ACTIVE_KEY, "deepseek")
+    db.set_setting(conn, STUB_ONLY_KEY, "1")
+    conn.close()
+
+    resolver = AdapterResolver(cfg, db_path=cfg.run.db_path)
     assert [a.name for a in resolver.resolve("llm")] == ["stub"]
+    assert resolver.stub_only() is True
 
 
 def test_resolver_uses_the_provider_stored_in_the_db(cfg: Config):
@@ -53,8 +59,7 @@ def test_resolver_uses_the_provider_stored_in_the_db(cfg: Config):
     db.set_setting(conn, ACTIVE_KEY, "deepseek")
     conn.close()
 
-    secrets = Secrets()
-    resolver = AdapterResolver(cfg, secrets, db_path=cfg.run.db_path)
+    resolver = AdapterResolver(cfg, db_path=cfg.run.db_path)
     assert [a.name for a in resolver.resolve("llm")] == ["deepseek", "stub"]
     assert resolver.get("llm").model == "deepseek-flash"
     assert resolver.llm_name == "deepseek"

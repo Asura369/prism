@@ -4,15 +4,14 @@ import logging
 
 from fastapi.testclient import TestClient
 
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.main import create_app
 
 KEY = "sk-test-only-1234567890"
 
 
 def _client(cfg: Config) -> TestClient:
-    secrets = Secrets()
-    return TestClient(create_app(cfg, secrets))
+    return TestClient(create_app(cfg))
 
 
 def test_lists_shipped_providers_unconfigured(cfg: Config):
@@ -132,3 +131,21 @@ def test_test_endpoint_reports_auth_failure_without_the_key(cfg: Config, monkeyp
         assert body["ok"] is False
         assert body["error"] == "auth_failed"
         assert KEY not in response.text
+
+
+def test_testing_mode_runs_on_the_stub_adapter(cfg: Config):
+    with _client(cfg) as client:
+        assert client.put("/api/providers/deepseek", json={"api_key": KEY}).status_code == 200
+        assert client.post("/api/providers/deepseek/activate").status_code == 200
+        assert [a["name"] for a in client.get("/api/settings").json()["adapters"]["llm"]] == ["deepseek", "stub"]
+
+        enabled = client.put("/api/settings/stub-only", json={"enabled": True})
+        assert enabled.status_code == 200
+        assert enabled.json() == {"stub_only": True}
+
+        config = client.get("/api/settings").json()
+        assert config["stub_only"] is True
+        assert [a["name"] for a in config["adapters"]["llm"]] == ["stub"]
+
+        client.put("/api/settings/stub-only", json={"enabled": False})
+        assert [a["name"] for a in client.get("/api/settings").json()["adapters"]["llm"]] == ["deepseek", "stub"]

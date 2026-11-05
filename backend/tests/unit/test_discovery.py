@@ -9,7 +9,7 @@ import pytest
 
 from prism import db
 from prism.adapters.resolver import Completion
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.discovery import service
 from prism.discovery.angles import _validate_angles, default_plugin_for
 from prism.discovery.cluster import cluster
@@ -165,10 +165,9 @@ def test_trends_cache_avoids_second_network_call(cfg: Config, monkeypatch):
             return [_candidate("gn:1", "Cached topic", "google_news_rss", 1.0)]
 
     monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": StubSource()})
-    secrets = Secrets(stub_adapters=True)
     from prism.adapters.resolver import AdapterResolver
 
-    resolver = AdapterResolver(cfg, secrets)
+    resolver = AdapterResolver(cfg, stub_only=True)
     first = service.fetch_trends(cfg, conn, resolver, region="US", window_h=24)
     second = service.fetch_trends(cfg, conn, resolver, region="US", window_h=24)
     assert calls["n"] == 1
@@ -187,10 +186,9 @@ def test_source_failure_is_isolated(cfg: Config, monkeypatch):
             raise RuntimeError("network down")
 
     monkeypatch.setattr(service, "build_sources", lambda cfg: {"google_news_rss": BrokenSource()})
-    secrets = Secrets(stub_adapters=True)
     from prism.adapters.resolver import AdapterResolver
 
-    result = service.fetch_trends(cfg, conn, AdapterResolver(cfg, secrets), region="US", window_h=24)
+    result = service.fetch_trends(cfg, conn, AdapterResolver(cfg, stub_only=True), region="US", window_h=24)
     assert result["sources_failed"] == ["google_news_rss"]
     assert result["candidates"] == []
 

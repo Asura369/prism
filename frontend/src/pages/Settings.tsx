@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { PlateHeader, SectionHeading } from "@/components/Plate";
 import { ProviderCard } from "@/components/ProviderCard";
 import { ProviderPicker } from "@/components/ProviderPicker";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { relativeTime } from "@/lib/utils";
 
 const INTERFACES = ["llm", "cards", "export", "news"] as const;
@@ -16,6 +17,18 @@ export default function Settings() {
 
   const llm = settings.data?.llm;
   const [picked, setPicked] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+  const stubOnly = settings.data?.stub_only ?? false;
+  const toggleStub = useMutation({
+    mutationFn: (enabled: boolean) => api.setStubOnly(enabled),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["settings"] }),
+        queryClient.invalidateQueries({ queryKey: ["providers"] }),
+      ]);
+    },
+  });
 
   const providersList = providers.data ?? [];
   // Only one connection is ever visible: the active one, else any configured one.
@@ -50,11 +63,6 @@ export default function Settings() {
           )}
         </p>
 
-        {settings.data?.stub_adapters ? (
-          <p className="mb-3 border border-spectrum-policy/35 bg-spectrum-policy/[0.07] px-3 py-2 text-[11.5px] text-[#7c4a12]">
-            Stub adapters are on. Every LLM call uses the deterministic stub, whatever is configured below.
-          </p>
-        ) : null}
 
         {providers.isError ? (
           <p className="text-[12.5px] text-[#a32d1b]">{(providers.error as Error).message}</p>
@@ -79,6 +87,32 @@ export default function Settings() {
             </>
           )}
         </div>
+      </section>
+
+      <section>
+        <SectionHeading aside={stubOnly ? "on" : "off"}>Testing mode</SectionHeading>
+        <div className="flex max-w-[560px] items-start justify-between gap-4 border border-ink-900/12 bg-paper-50 px-4 py-3">
+          <p className="text-[11.5px] leading-relaxed text-ink-400">
+            Run every job on canned stub data. Nothing reaches a provider, so no key is used and no tokens are spent.
+            <br />
+            <span className="text-ink-700">
+              {stubOnly
+                ? "On — provider settings below are ignored and jobs are marked degraded."
+                : "Off — jobs use the active provider; stub output is marked degraded."}
+            </span>
+          </p>
+          <Button
+            size="sm"
+            variant={stubOnly ? "outline" : "default"}
+            disabled={toggleStub.isPending}
+            onClick={() => toggleStub.mutate(!stubOnly)}
+          >
+            {stubOnly ? "Turn off" : "Turn on"}
+          </Button>
+        </div>
+        {toggleStub.isError ? (
+          <p className="mt-2 text-[12.5px] text-[#a32d1b]">{(toggleStub.error as Error).message}</p>
+        ) : null}
       </section>
 
       <section>

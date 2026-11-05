@@ -7,15 +7,14 @@ import zipfile
 from fastapi.testclient import TestClient
 
 from prism import db
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.domain import JobStatus
 from prism.main import create_app
 from prism.orchestrator import Orchestrator
 
 
 def _app_client(cfg: Config):
-    secrets = Secrets(stub_adapters=True)
-    app = create_app(cfg, secrets)
+    app = create_app(cfg, stub_only=True)
     return app, TestClient(app)
 
 

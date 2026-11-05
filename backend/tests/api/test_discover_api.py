@@ -6,15 +6,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from prism.adapters.llm.stub import ANGLES
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.discovery import service
 from prism.domain import TrendCandidate
 from prism.main import create_app
 
 
 def _client(cfg: Config) -> TestClient:
-    secrets = Secrets(stub_adapters=True)
-    return TestClient(create_app(cfg, secrets))
+    return TestClient(create_app(cfg, stub_only=True))
 
 
 def _candidate() -> TrendCandidate:

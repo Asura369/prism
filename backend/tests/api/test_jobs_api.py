@@ -6,14 +6,13 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from prism import db
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.domain import Job, JobStatus
 from prism.main import create_app
 
 
 def _client(cfg: Config) -> TestClient:
-    secrets = Secrets(stub_adapters=True)
-    return TestClient(create_app(cfg, secrets))
+    return TestClient(create_app(cfg, stub_only=True))
 
 
 def test_plugins_endpoint(cfg: Config):

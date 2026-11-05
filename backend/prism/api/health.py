@@ -3,9 +3,10 @@ from __future__ import annotations
 import sqlite3
 
 from fastapi import APIRouter, Depends, Request
+from pydantic import BaseModel
 
 from .. import db
-from ..providers.config import effective_llm
+from ..providers.config import STUB_ONLY_KEY, effective_llm
 from .common import get_conn
 
 router = APIRouter(tags=["health"])
@@ -26,7 +27,6 @@ def health(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
 def settings(request: Request):
     cfg = request.app.state.cfg
     resolver = request.app.state.resolver
-    secrets = request.app.state.secrets
     effective = effective_llm(request.app.state.db_path)
     data = cfg.model_dump(mode="json", exclude={"base_dir"})
     return {
@@ -39,6 +39,21 @@ def settings(request: Request):
         },
         "adapters": resolver.availability(),
         "styles": resolver.style_names(),
-        "stub_adapters": secrets.stub_adapters,
+        "stub_only": resolver.stub_only(),
     }
+
+
+class StubOnlyBody(BaseModel):
+    enabled: bool
+
+
+@router.put("/settings/stub-only")
+def set_stub_only(body: StubOnlyBody, request: Request, conn=Depends(get_conn)):
+    """Testing mode: run every job on the stub adapters, so feature work costs no API calls."""
+    if body.enabled:
+        db.set_setting(conn, STUB_ONLY_KEY, "1")
+    else:
+        db.delete_setting(conn, STUB_ONLY_KEY)
+    request.app.state.resolver.refresh_llm()
+    return {"stub_only": body.enabled}
 

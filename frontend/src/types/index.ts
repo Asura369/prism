@@ -89,7 +89,7 @@ export interface SettingsResponse {
   };
   adapters: Record<string, { name: string; available: boolean }[]>;
   styles: string[];
-  stub_adapters: boolean;
+  stub_only: boolean;
 }
 
 export interface ProviderInfo {

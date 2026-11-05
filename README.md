@@ -80,7 +80,7 @@ Runtime output is gitignored: `data/` (SQLite), `review/` (decks and metadata),
 | Card renderer | `templated` (Pillow + Inter) | — |
 | Export | `zip` | — |
 | Trend sources | Google News RSS, Hacker News, Trends CSV, manual | soft-fail per source |
-| News sources | `google_news_rss` | `stub` when the stub adapters are on (tests, demo) |
+| News sources | `google_news_rss` | `stub` in testing mode (tests, demo) |
 
 Providers are plugins: `backend/prism/providers/*/manifest.yaml` declares the base URL,
 model, and request quirks (`json_mode`, `headers`, `extra_body`, token-parameter naming).
@@ -107,7 +107,7 @@ job fails silently.
 
 | Symptom | Error / response | What you see, what to do |
 |---|---|---|
-| No provider configured, or the provider is down | `stub` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Red "Degraded" note on the Review provenance panel; configure a provider in Settings. |
+| No provider configured, the provider is down, or testing mode is on | `stub` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Red "Degraded" note on the Review provenance panel; configure a provider in Settings, or turn testing mode off. |
 | Candidate fails the safety filter | `unsafe_candidate` (HTTP 400) on manual entry; auto-discovered candidates are dropped | Nothing is queued; rephrase the topic or title. |
 | Spec breaks the plugin schema | one re-prompt, then `SpecValidationError` | Job FAILED at `spec`; retry the job. |
 | News run finds fewer articles than `min_sources` | `InsufficientSourcesError(found, required)` | Job FAILED at `ingest`; a failing adapter is recorded in `manifest.ingest_errors` — widen the topic or adjust `min_sources`. |
@@ -129,6 +129,16 @@ serializes to `{error_class, stage, message, retryable, context}`.
 `make demo` runs all three plugins with the deterministic stubs — no key, no
 network — and writes one artifact per plugin to `review/<job_id>/`. The decks
 then sit in the review queue.
+
+## Testing mode
+
+**Settings → Testing mode** pins every job to the `stub` adapters: canned data, no
+provider, no key, no tokens spent. It lives in the database, applies from the next
+job without a restart, and overrides whatever provider is active — use it to build
+and edit features that would otherwise cost API calls.
+
+Stub output is canned, so those jobs are marked `degraded`. Testing mode never
+produces a run that looks healthy.
 
 ## Testing
 

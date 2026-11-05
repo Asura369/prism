@@ -8,7 +8,7 @@ from PIL import Image
 
 from prism import db
 from prism.adapters.resolver import AdapterResolver
-from prism.config import Config, Secrets
+from prism.config import Config
 from prism.domain import Job, JobStatus
 from prism.orchestrator import Orchestrator
 from prism.plugins.registry import PluginRegistry
@@ -31,13 +31,12 @@ def _job() -> Job:
     )
 
 
-def test_facts_pipeline_end_to_end(cfg: Config, secrets: Secrets):
-    secrets.stub_adapters = True
+def test_facts_pipeline_end_to_end(cfg: Config):
     db.init_db(cfg.run.db_path)
     conn = db.connect(cfg.run.db_path)
     job = _job()
     db.insert_job(conn, job, seed=42)
-    resolver = AdapterResolver(cfg, secrets)
+    resolver = AdapterResolver(cfg, stub_only=True)
     registry = PluginRegistry(cfg, resolver)
     artifact = Orchestrator(cfg, resolver, registry, conn, job, seed=42).run()
 
@@ -67,6 +66,8 @@ def test_facts_pipeline_end_to_end(cfg: Config, secrets: Secrets):
     assert manifest["plugin"] == "facts_carousel"
     assert manifest["error"] is None
     assert manifest["adapters"]["llm"]["name"] == "stub"
+    # Stub output is canned, so it is never presented as a healthy run.
+    assert manifest["degraded"] is True
 
     row = db.get_job(conn, job.job_id)
     assert row is not None

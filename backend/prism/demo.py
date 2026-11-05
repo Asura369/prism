@@ -4,7 +4,7 @@ import uuid
 
 from . import db
 from .adapters.resolver import AdapterResolver
-from .config import Secrets, load_config, resolve_path
+from .config import load_config, resolve_path
 from .domain import Job, JobStatus
 from .orchestrator import Orchestrator
 from .plugins.registry import PluginRegistry
@@ -12,11 +12,10 @@ from .plugins.registry import PluginRegistry
 
 def main() -> int:
     cfg = load_config()
-    secrets = Secrets(stub_adapters=True)
     db_path = resolve_path(cfg.run.db_path, cfg.base_dir)
     db.init_db(db_path)
     conn = db.connect(db_path)
-    resolver = AdapterResolver(cfg, secrets)
+    resolver = AdapterResolver(cfg, db_path=str(db_path), stub_only=True)
     registry = PluginRegistry(cfg, resolver)
     plugins = sorted(registry.names())
     if not plugins:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 from pathlib import Path
@@ -132,13 +131,6 @@ class Config(_Model):
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
 
 
-@dataclass
-class Secrets:
-    """The one runtime switch left: force the deterministic stub adapters."""
-
-    stub_adapters: bool = False
-
-
 def _config_path(explicit: Path | None = None) -> Path | None:
     candidates: list[Path] = []
     if explicit:
@@ -166,11 +158,6 @@ def load_config(path: Path | None = None) -> Config:
 @lru_cache
 def get_config() -> Config:
     return load_config()
-
-
-@lru_cache
-def get_secrets() -> Secrets:
-    return Secrets()
 
 
 def resolve_path(path: str | Path, base: Path | None = None) -> Path:

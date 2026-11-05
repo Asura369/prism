@@ -5,7 +5,7 @@ import httpx
 from prism.adapters.news.stub import StubNews
 from prism.adapters.news.google_news import GoogleNewsRSSNews
 from prism.adapters.resolver import AdapterResolver
-from prism.config import Config, Secrets
+from prism.config import Config
 
 RSS_XML = """<?xml version="1.0"?><rss version="2.0"><channel>
 <item>
@@ -85,10 +85,9 @@ def test_google_news_news_normalizes_language_region_suffix():
     assert "en-US-US" not in url
 
 
-def test_news_chain_real(cfg: Config, secrets: Secrets):
-    assert AdapterResolver(cfg, secrets).chain_names("news") == ["google_news_rss"]
+def test_news_chain_real(cfg: Config):
+    assert AdapterResolver(cfg).chain_names("news") == ["google_news_rss"]
 
 
-def test_news_chain_stub(cfg: Config, secrets: Secrets):
-    secrets.stub_adapters = True
-    assert AdapterResolver(cfg, secrets).chain_names("news") == ["stub"]
+def test_news_chain_stub(cfg: Config):
+    assert AdapterResolver(cfg, stub_only=True).chain_names("news") == ["stub"]

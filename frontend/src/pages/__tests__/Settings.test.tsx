@@ -16,6 +16,7 @@ vi.mock("@/api/client", () => ({
     deleteProviderKey: vi.fn(),
     activateProvider: vi.fn(),
     testProvider: vi.fn(),
+    setStubOnly: vi.fn(),
   },
 }));
 
@@ -24,7 +25,7 @@ const settings: SettingsResponse = {
   llm: { provider: "opencode_go", model: "deepseek-v4.1-flash", base_url: "https://gw/v1", key_set: true },
   adapters: { llm: [{ name: "opencode_go", available: true }] },
   styles: ["slate"],
-  stub_adapters: false,
+  stub_only: false,
 };
 
 function provider(overrides: Partial<ProviderInfo>): ProviderInfo {
@@ -130,5 +131,25 @@ describe("Settings — model providers", () => {
     expect(document.querySelector('input[type="password"]')).toBeNull();
     const inputs = Array.from(document.querySelectorAll("input"));
     expect(inputs.some((input) => input.value.startsWith("sk-"))).toBe(false);
+  });
+});
+
+describe("Settings — testing mode", () => {
+  it("turns testing mode on, so jobs stop calling a provider", async () => {
+    vi.mocked(api.setStubOnly).mockResolvedValue({ stub_only: true });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Turn on" }));
+    await waitFor(() => expect(api.setStubOnly).toHaveBeenCalledWith(true));
+  });
+
+  it("shows the mode as on, with a way back out", async () => {
+    vi.mocked(api.settings).mockResolvedValue({ ...settings, stub_only: true });
+    vi.mocked(api.setStubOnly).mockResolvedValue({ stub_only: false });
+    renderPage();
+
+    expect(await screen.findByText(/provider settings below are ignored/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Turn off" }));
+    await waitFor(() => expect(api.setStubOnly).toHaveBeenCalledWith(false));
   });
 });

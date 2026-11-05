@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from prism.config import Config, Secrets, load_config
+from prism.config import Config, load_config
 from prism.domain import SlideSpec
 from prism.plugins.facts_carousel.plugin import FactsCarouselPlugin
 from prism.plugins.faq_carousel.plugin import FaqCarouselPlugin
@@ -23,11 +23,6 @@ def cfg(tmp_path: Path) -> Config:
     cfg.run.output_dir = str(tmp_path / "review")
     cfg.run.db_path = str(tmp_path / "prism.db")
     return cfg
-
-
-@pytest.fixture
-def secrets() -> Secrets:
-    return Secrets(stub_adapters=False)
 
 
 @pytest.fixture

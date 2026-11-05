@@ -140,7 +140,8 @@ class Orchestrator:
         if self.llm_adapter_name is None:
             self.llm_adapter_name = result.adapter
             self.llm_model = result.model
-        if result.adapter != self.resolver.llm_name:
+        if result.adapter == "stub" or result.adapter != self.resolver.llm_name:
+            # Stub output is canned even when it is the expected adapter (testing mode).
             label = f"llm:{result.adapter}"
             if label not in self.manifest["fallbacks_used"]:
                 self.manifest["fallbacks_used"].append(label)
@@ -218,7 +219,8 @@ class Orchestrator:
         }
         self.manifest["sources"] = self.spec.sources
         self.manifest["adapters"]["news"] = {"name": getattr(adapter, "name", "?")}
-        if getattr(adapter, "name", None) != self.resolver.chain_names("news")[0]:
+        news_name = getattr(adapter, "name", None)
+        if news_name == "stub" or news_name != self.resolver.chain_names("news")[0]:
             label = f"news:{getattr(adapter, 'name', '?')}"
             if label not in self.manifest["fallbacks_used"]:
                 self.manifest["fallbacks_used"].append(label)

@@ -64,7 +64,7 @@ describe("Discover", () => {
       llm: { provider: null, model: null, base_url: null, key_set: false },
       adapters: {},
       styles: ["cream"],
-      stub_adapters: true,
+      stub_only: true,
     });
     vi.mocked(api.trends).mockResolvedValue({
       fetched_at: new Date().toISOString(),
