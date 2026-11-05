@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { PlateHeader, SectionHeading } from "@/components/Plate";
+import { ProviderCard } from "@/components/ProviderCard";
+import { ProviderPicker } from "@/components/ProviderPicker";
 import { Badge } from "@/components/ui/badge";
 import { relativeTime } from "@/lib/utils";
 
@@ -8,66 +11,97 @@ const INTERFACES = ["llm", "cards", "export", "news"] as const;
 
 export default function Settings() {
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings });
+  const providers = useQuery({ queryKey: ["providers"], queryFn: api.providers });
   const health = useQuery({ queryKey: ["health"], queryFn: api.health, refetchInterval: 5000 });
+
+  const llm = settings.data?.llm;
+  const [picked, setPicked] = useState<string | null>(null);
+
+  const providersList = providers.data ?? [];
+  // Only one connection is ever visible: the active one, else any configured one.
+  const configured =
+    providersList.find((provider) => provider.active && provider.configured) ??
+    providersList.find((provider) => provider.configured);
+  const chosen = configured ?? providersList.find((provider) => provider.name === picked);
 
   return (
     <div className="flex flex-col gap-6">
       <PlateHeader
-        title="Resolved adapters"
+        title="Settings"
         meta={
           <>
-            Values come from <code className="font-mono text-[11.5px]">config.yaml</code> plus environment. Edit the file
-            and restart to change them.
+            Providers are configured here and stored in the local database — the only place they live.
           </>
         }
       />
 
       {settings.isError ? <p className="text-[12.5px] text-[#a32d1b]">{(settings.error as Error).message}</p> : null}
 
-      <div className="grid items-start gap-6 md:grid-cols-2">
-        <section>
-          <SectionHeading>Keys</SectionHeading>
-          <div className="flex flex-col">
-            {settings.data
-              ? Object.entries(settings.data.keys).map(([name, state]) => (
-                  <div
-                    key={name}
-                    className="flex items-center justify-between gap-4 border-b border-ink-900/8 py-2 last:border-0"
-                  >
-                    <span className="font-mono text-[11.5px] text-ink-500">{name}</span>
-                    <Badge variant={state === "SET" ? "success" : "outline"}>{state}</Badge>
-                  </div>
-                ))
-              : null}
-            {settings.data?.fake_adapters ? (
-              <p className="mt-3 border border-spectrum-policy/35 bg-spectrum-policy/[0.07] px-3 py-2 text-[11.5px] text-[#7c4a12]">
-                Fake adapters are on. Every LLM call uses the deterministic fake.
-              </p>
-            ) : null}
-          </div>
-        </section>
+      <section>
+        <SectionHeading aside="write-only keys">Model providers</SectionHeading>
+        <p className="mb-3 text-[11.5px] text-ink-400">
+          {llm?.provider ? (
+            <>
+              Active: <span className="font-mono text-ink-700">{llm.provider}</span> ·{" "}
+              <span className="font-mono text-ink-700">{llm.model}</span>
+            </>
+          ) : (
+            <>No provider active. Jobs run on the deterministic fake until you set one up.</>
+          )}
+        </p>
 
-        <section>
-          <SectionHeading>Worker</SectionHeading>
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between gap-4 border-b border-ink-900/8 py-2">
-              <span className="text-[12px] text-ink-400">Alive</span>
-              <Badge variant={health.data?.worker.alive ? "success" : "danger"}>
-                {health.data?.worker.alive ? "yes" : "no"}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between gap-4 border-b border-ink-900/8 py-2">
-              <span className="text-[12px] text-ink-400">Last heartbeat</span>
-              <span className="tnum text-[12.5px] font-medium text-ink-900">
-                {health.data?.worker.last_heartbeat ? relativeTime(health.data.worker.last_heartbeat) : "never"}
-              </span>
-            </div>
-            <p className="mt-3 text-[11.5px] text-ink-400">
-              Start it with <code className="font-mono text-[11px]">make worker</code>.
-            </p>
+        {settings.data?.fake_adapters ? (
+          <p className="mb-3 border border-spectrum-policy/35 bg-spectrum-policy/[0.07] px-3 py-2 text-[11.5px] text-[#7c4a12]">
+            Fake adapters are on. Every LLM call uses the deterministic fake, whatever is configured below.
+          </p>
+        ) : null}
+
+        {providers.isError ? (
+          <p className="text-[12.5px] text-[#a32d1b]">{(providers.error as Error).message}</p>
+        ) : null}
+
+        {providers.isSuccess && !providersList.length ? (
+          <p className="text-[11.5px] text-ink-400">No provider manifests found.</p>
+        ) : null}
+
+        <div className="flex max-w-[560px] flex-col gap-3">
+          {configured ? (
+            <ProviderCard key={configured.name} provider={configured} />
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <ProviderPicker providers={providersList} selected={picked} onSelect={setPicked} />
+                <span className="text-[11.5px] text-ink-400">
+                  {picked ? "Enter a key to finish setting it up." : "Pick the provider you want to run jobs with."}
+                </span>
+              </div>
+              {chosen ? <ProviderCard key={chosen.name} provider={chosen} /> : null}
+            </>
+          )}
+        </div>
+      </section>
+
+      <section>
+        <SectionHeading>Worker</SectionHeading>
+        <div className="flex max-w-[520px] flex-col">
+          <div className="flex items-center justify-between gap-4 border-b border-ink-900/8 py-2">
+            <span className="text-[12px] text-ink-400">Alive</span>
+            <Badge variant={health.data?.worker.alive ? "success" : "danger"}>
+              {health.data?.worker.alive ? "yes" : "no"}
+            </Badge>
           </div>
-        </section>
-      </div>
+          <div className="flex items-center justify-between gap-4 border-b border-ink-900/8 py-2">
+            <span className="text-[12px] text-ink-400">Last heartbeat</span>
+            <span className="tnum text-[12.5px] font-medium text-ink-900">
+              {health.data?.worker.last_heartbeat ? relativeTime(health.data.worker.last_heartbeat) : "never"}
+            </span>
+          </div>
+          <p className="mt-3 text-[11.5px] text-ink-400">
+            Start it with <code className="font-mono text-[11px]">make worker</code>. Provider changes land on the next
+            job — no restart.
+          </p>
+        </div>
+      </section>
 
       {settings.data ? (
         <section>

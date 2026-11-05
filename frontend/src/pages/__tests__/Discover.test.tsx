@@ -61,7 +61,7 @@ describe("Discover", () => {
           },
         },
       },
-      keys: { LLM_KEY: "SET" },
+      llm: { provider: null, model: null, base_url: null, key_set: false },
       adapters: {},
       styles: ["cream"],
       fake_adapters: true,

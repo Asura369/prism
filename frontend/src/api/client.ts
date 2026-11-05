@@ -8,6 +8,9 @@ import type {
   JobSummary,
   ManualIdeaResponse,
   PluginInfo,
+  ProviderDraft,
+  ProviderInfo,
+  ProviderTestResult,
   ReviewDetail,
   ReviewItem,
   ReviewMetadata,
@@ -59,6 +62,18 @@ export const api = {
   health: () => request<Health>("/health"),
   plugins: () => request<PluginInfo[]>("/plugins"),
   settings: () => request<SettingsResponse>("/settings"),
+  providers: () => request<ProviderInfo[]>("/providers"),
+  saveProvider: (id: string, draft: ProviderDraft) =>
+    request<ProviderInfo>(`/providers/${id}`, { method: "PUT", body: JSON.stringify(draft) }),
+  deleteProviderKey: (id: string) =>
+    request<ProviderInfo>(`/providers/${id}/key`, { method: "DELETE" }),
+  activateProvider: (id: string) =>
+    request<ProviderInfo>(`/providers/${id}/activate`, { method: "POST" }),
+  testProvider: (id: string, draft: ProviderDraft) =>
+    request<ProviderTestResult>(`/providers/${id}/test`, {
+      method: "POST",
+      body: JSON.stringify(draft),
+    }),
   listJobs: (status?: string) =>
     request<{ items: JobSummary[]; total: number }>(
       `/jobs${status ? `?status=${encodeURIComponent(status)}` : ""}`,

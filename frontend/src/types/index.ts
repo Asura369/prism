@@ -81,11 +81,41 @@ export interface Health {
 
 export interface SettingsResponse {
   config: Record<string, unknown>;
-  keys: { LLM_KEY: "SET" | "UNSET" };
+  llm: {
+    provider: string | null;
+    model: string | null;
+    base_url: string | null;
+    key_set: boolean;
+  };
   adapters: Record<string, { name: string; available: boolean }[]>;
   styles: string[];
   fake_adapters: boolean;
 }
+
+export interface ProviderInfo {
+  name: string;
+  label: string;
+  models: string[];
+  default_model: string;
+  json_mode: boolean;
+  base_url: string;
+  model: string;
+  configured: boolean;
+  key_set: boolean;
+  active: boolean;
+}
+
+export interface ProviderTestResult {
+  ok: boolean;
+  latency_ms: number;
+  error?: string;
+  message?: string;
+}
+
+export interface ProviderDraft {
+  api_key?: string;
+}
+
 
 export interface ReviewMetadata {
   title: string;
