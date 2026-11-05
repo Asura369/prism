@@ -221,6 +221,7 @@ __marimo__/
 
 # local npm cache (avoids a broken global cache)
 frontend/.npm-cache/
+.npm-cache/
 
 # Prism runtime and frontend
 .env
@@ -235,3 +236,10 @@ frontend/.npm-cache/
 # frontend shared utilities (the Python template ignores lib/)
 !frontend/src/lib/
 !frontend/src/lib/**
+
+# Internal design/product records and agent artifacts — local only
+plans/
+.impeccable/
+.superpowers/
+/PRODUCT.md
+/DESIGN.md
