@@ -107,7 +107,7 @@ export default function Angles() {
             <div key={item} className="h-72 animate-pulse rounded-plate border border-ink-900/10 bg-paper-50" />
           ))}
         </div>
-      ) : angles.length === 0 ? (
+      ) : !anglesQuery.isError && angles.length === 0 ? (
         <div className="rounded-plate border border-dashed border-ink-900/20 bg-paper-50/50 px-6 py-12">
           <p className="max-w-md text-[12.5px] leading-relaxed text-ink-500">
             This run produced no angles. Regenerate them, or pick a different candidate from Discover.

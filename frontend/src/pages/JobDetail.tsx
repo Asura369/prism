@@ -13,6 +13,18 @@ import type { JobDetail as JobDetailType } from "@/types";
 
 const TERMINAL = ["REVIEW_READY", "APPROVED", "REJECTED", "FAILED", "CANCELLED"];
 
+/** Older rows may carry no started_at; never call a finished job "waiting for the worker". */
+function timing(job: JobDetailType["job"]): string {
+  if (job.started_at) {
+    return `started ${relativeTime(job.started_at)} · ${elapsed(job.started_at, job.finished_at)} elapsed`;
+  }
+  if (job.status === "QUEUED" || job.status === "RUNNING") {
+    return `queued ${relativeTime(job.created_at)} · waiting for the worker`;
+  }
+  const finished = job.finished_at ? ` · finished ${relativeTime(job.finished_at)}` : "";
+  return `created ${relativeTime(job.created_at)}${finished}`;
+}
+
 export default function JobDetail() {
   const { jobId = "" } = useParams();
   const navigate = useNavigate();
@@ -96,11 +108,7 @@ export default function JobDetail() {
             <h1 className="mt-2 max-w-3xl text-[21px] font-semibold leading-[1.14] tracking-[-0.022em] text-ink-900 sm:text-[24px] lg:text-[26px]">
               {job.topic}
             </h1>
-            <p className="mt-2 text-[12.5px] text-ink-500">
-              {job.started_at
-                ? `started ${relativeTime(job.started_at)} · ${elapsed(job.started_at, job.finished_at)} elapsed`
-                : `queued ${relativeTime(job.created_at)} · waiting for the worker`}
-            </p>
+            <p className="mt-2 text-[12.5px] text-ink-500">{timing(job)}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {job.status === "QUEUED" || job.status === "RUNNING" ? (
