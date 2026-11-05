@@ -15,10 +15,11 @@ No Docker, no ffmpeg, no audio/video tooling.
 ## Quick start
 
 ```bash
-cp .env.example .env     # set LLM_KEY, or leave empty for the FakeLLM demo
 make setup
-make dev                 # http://localhost:5173
+make dev                 # http://localhost:5173 -> Settings -> Model providers
 ```
+
+No `.env`: paths live in `config.yaml`, providers and their keys in the local database.
 
 API docs: http://localhost:8000/docs
 
@@ -56,7 +57,7 @@ React + Vite → FastAPI (:8000) → SQLite (WAL) ← worker process → plugin 
 | `backend/tests/` | unit, API, and full-pipeline tests |
 | `frontend/src/` | React console: pages, components, API client, types |
 | `assets/` | Inter fonts and renderer style presets |
-| `config.yaml` | adapter chains, discovery weights, validation and policy knobs |
+| `config.yaml` | discovery weights, validation and policy knobs (providers are not here) |
 | `docs/screenshots/` | the deck renders above |
 | `scripts/dev.sh` | boots the API, worker, and Vite together |
 
@@ -79,10 +80,19 @@ Runtime output is gitignored: `data/` (SQLite), `review/` (decks and metadata),
 | Card renderer | `templated` (Pillow + Inter) | — |
 | Export | `zip` | — |
 | Trend sources | Google News RSS, Hacker News, Trends CSV, manual | soft-fail per source |
-| News sources | `google_news_rss` | `fake` when `FAKE_ADAPTERS=1` |
+| News sources | `google_news_rss` | `fake` when the fake adapters are on (tests, demo) |
 
-The LLM adapter takes any OpenAI-compatible `base_url` + `model`; `LLM_KEY` is the
-provider key. Provider-specific request fields can go in `extra_body`.
+Providers are plugins: `backend/prism/providers/*/manifest.yaml` declares the base URL,
+model, and request quirks (`json_mode`, `headers`, `extra_body`, token-parameter naming).
+Ships with OpenAI, DeepSeek, and OpenCode Go; adding another OpenAI-compatible provider
+is one manifest file. The presets are read-only in the UI — base URL and model come from
+the manifest, so there is nothing to get wrong.
+
+Configure one in **Settings → Model providers**: pick a provider, paste a key, activate
+it. The database is the only source of provider configuration — no `LLM_KEY`, no
+`adapters.llm` block in `config.yaml`. The key is write-only: stored locally, never shown
+again; to change it, delete it and re-enter it. Provider changes apply to the next job;
+no restart needed.
 
 ## Tuning
 
@@ -97,7 +107,7 @@ job fails silently.
 
 | Symptom | Error / response | What you see, what to do |
 |---|---|---|
-| `LLM_KEY` missing, or the provider is down | `fake` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Red "Degraded" note on the Review provenance panel; set `LLM_KEY` for real output. |
+| No provider configured, or the provider is down | `fake` LLM takes over and the job is marked `degraded` (no error); `AdapterUnavailable` only if the whole chain is empty | Red "Degraded" note on the Review provenance panel; configure a provider in Settings. |
 | Candidate fails the safety filter | `unsafe_candidate` (HTTP 400) on manual entry; auto-discovered candidates are dropped | Nothing is queued; rephrase the topic or title. |
 | Spec breaks the plugin schema | one re-prompt, then `SpecValidationError` | Job FAILED at `spec`; retry the job. |
 | News run finds fewer articles than `min_sources` | `InsufficientSourcesError(found, required)` | Job FAILED at `ingest`; a failing adapter is recorded in `manifest.ingest_errors` — widen the topic or adjust `min_sources`. |
@@ -128,8 +138,9 @@ make test-backend  # pytest only
 make test-frontend # typecheck + vitest only
 ```
 
-Both suites run with `FAKE_ADAPTERS=1` and need no API keys or network. There is
-no CI configuration; run `make test` locally before committing.
+Both suites run offline: tests use a temp database with no provider configured, so the
+deterministic fake takes over. No API key, no `.env`, no network. There is no CI
+configuration; run `make test` locally before committing.
 
 ## Scope and non-goals
 
